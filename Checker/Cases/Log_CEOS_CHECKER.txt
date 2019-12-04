@@ -1,0 +1,82 @@
+***************************************************************************** 
+                              CEOS CHECKER
+ 
+***************************************************************************** 
+
+Initializing CEOS check...
+
+============================================================================= 
+FOLDER CASE:  Linear_FEA_3D_Hexa8_GeneralizedHookesLaw
+Running CEOS...
+Running CHECKER...
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+============================================================================= 
+
+============================================================================= 
+FOLDER CASE:  NonLinear_FEA_3D_Hexa8_NeoHookean_Incompressible
+Running CEOS...
+Running CHECKER...
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+============================================================================= 
+
+============================================================================= 
+FOLDER CASE:  NonLinear_FEA_3D_Hexa8_StVenant
+Running CEOS...
+Running CHECKER...
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+============================================================================= 
+
+============================================================================= 
+FOLDER CASE:  NonLinear_FEA_3D_Tetra4_StVenant
+Running CEOS...
+Running CHECKER...
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+============================================================================= 
+
+============================================================================= 
+FOLDER CASE:  NonLinear_FEA_Axi_Quad4_NeoHookean_Incompressible
+Running CEOS...
+Running CHECKER...
+============================================================================= 
+
+============================================================================= 
+FOLDER CASE:  NonLinear_FEA_Axi_Quad4_StVenant
+Running CEOS...
+Running CHECKER...
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+============================================================================= 
+
+============================================================================= 
+FOLDER CASE:  NonLinear_FEA_PlaneStrain_Quad4_StVenant
+Running CEOS...
+Running CHECKER...
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+ CHECKER Analysis: SUCCESS!
+============================================================================= 
+
+CEOS check is finished.
+
+***************************************************************************** 
+
+Analysis details in Log_CEOS.txt and Log_CHECKER.txt into the folder cases. 
+
+*****************************************************************************
+

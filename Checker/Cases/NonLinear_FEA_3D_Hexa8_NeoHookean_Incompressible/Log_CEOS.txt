@@ -1,0 +1,647 @@
+ ---------------------------------------------------------
+                          CEOS
+ ---------------------------------------------------------
+ 
+ Settings File Name: Settings.dat
+ 
+ Problem will be solved
+ 
+ Problem will be postprocessed
+ PostProcessing File Name: Post_Processing.post
+ 
+ Opening Input File:Settings.dat
+ Reading Input File:Settings.dat
+ Input File Closed
+ 
+ ---------------------------------------------------------
+ SOLVING
+ ---------------------------------------------------------
+Load Case:   1
+ 
+    Step:   1 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.376000000E+10
+            IT:   1  NORM:  0.281014621E+07
+            IT:   2  NORM:  0.190547693E+06
+            IT:   3  NORM:  0.880289635E+04
+            IT:   4  NORM:  0.518990726E+02
+            IT:   5  NORM:  0.275990334E-02
+            IT:   6  NORM:  0.668655848E-04
+            Converged in   6 iterations
+    End Step:   1
+ 
+    Step:   2 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.368407602E+10
+            IT:   1  NORM:  0.279657611E+07
+            IT:   2  NORM:  0.455828439E+05
+            IT:   3  NORM:  0.758012420E+04
+            IT:   4  NORM:  0.293638891E+01
+            IT:   5  NORM:  0.157838083E-03
+            Converged in   5 iterations
+    End Step:   2
+ 
+    Step:   3 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.361039095E+10
+            IT:   1  NORM:  0.272021993E+07
+            IT:   2  NORM:  0.101168341E+05
+            IT:   3  NORM:  0.251536464E+04
+            IT:   4  NORM:  0.128642236E+00
+            IT:   5  NORM:  0.711625908E-04
+            Converged in   5 iterations
+    End Step:   3
+ 
+    Step:   4 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.353888400E+10
+            IT:   1  NORM:  0.265192417E+07
+            IT:   2  NORM:  0.298340821E+04
+            IT:   3  NORM:  0.155399688E+04
+            IT:   4  NORM:  0.999744902E-02
+            IT:   5  NORM:  0.403744634E-04
+            Converged in   5 iterations
+    End Step:   4
+ 
+    Step:   5 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.346947155E+10
+            IT:   1  NORM:  0.259323354E+07
+            IT:   2  NORM:  0.114284696E+04
+            IT:   3  NORM:  0.126814227E+04
+            IT:   4  NORM:  0.138892052E-02
+            IT:   5  NORM:  0.507994555E-04
+            Converged in   5 iterations
+    End Step:   5
+ 
+    Step:   6 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.340207092E+10
+            IT:   1  NORM:  0.254134296E+07
+            IT:   2  NORM:  0.550129072E+03
+            IT:   3  NORM:  0.107831403E+04
+            IT:   4  NORM:  0.320922747E-03
+            Converged in   4 iterations
+    End Step:   6
+ 
+    Step:   7 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.333660344E+10
+            IT:   1  NORM:  0.249415459E+07
+            IT:   2  NORM:  0.329222836E+03
+            IT:   3  NORM:  0.938836264E+03
+            IT:   4  NORM:  0.126367486E-03
+            Converged in   4 iterations
+    End Step:   7
+ 
+    Step:   8 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.327299460E+10
+            IT:   1  NORM:  0.245034891E+07
+            IT:   2  NORM:  0.228237557E+03
+            IT:   3  NORM:  0.830572781E+03
+            IT:   4  NORM:  0.735434587E-04
+            Converged in   4 iterations
+    End Step:   8
+ 
+    Step:   9 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.321117381E+10
+            IT:   1  NORM:  0.240910183E+07
+            IT:   2  NORM:  0.175313903E+03
+            IT:   3  NORM:  0.743775205E+03
+            IT:   4  NORM:  0.611022115E-04
+            Converged in   4 iterations
+    End Step:   9
+ 
+    Step:  10 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.315107400E+10
+            IT:   1  NORM:  0.236988448E+07
+            IT:   2  NORM:  0.144287262E+03
+            IT:   3  NORM:  0.672733123E+03
+            IT:   4  NORM:  0.416450202E-04
+            Converged in   4 iterations
+    End Step:  10
+ 
+    Step:  11 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.309263142E+10
+            IT:   1  NORM:  0.233234498E+07
+            IT:   2  NORM:  0.124366310E+03
+            IT:   3  NORM:  0.613752569E+03
+            IT:   4  NORM:  0.414078095E-04
+            Converged in   4 iterations
+    End Step:  11
+ 
+    Step:  12 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.303578535E+10
+            IT:   1  NORM:  0.229624021E+07
+            IT:   2  NORM:  0.112863780E+03
+            IT:   3  NORM:  0.564274654E+03
+            IT:   4  NORM:  0.383870502E-04
+            Converged in   4 iterations
+    End Step:  12
+ 
+    Step:  13 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.298047792E+10
+            IT:   1  NORM:  0.226139582E+07
+            IT:   2  NORM:  0.107970582E+03
+            IT:   3  NORM:  0.522440802E+03
+            IT:   4  NORM:  0.394172966E-04
+            Converged in   4 iterations
+    End Step:  13
+ 
+    Step:  14 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.292665391E+10
+            IT:   1  NORM:  0.222768231E+07
+            IT:   2  NORM:  0.103708254E+03
+            IT:   3  NORM:  0.486855440E+03
+            IT:   4  NORM:  0.362731516E-04
+            Converged in   4 iterations
+    End Step:  14
+ 
+    Step:  15 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.287426061E+10
+            IT:   1  NORM:  0.219500017E+07
+            IT:   2  NORM:  0.999874217E+02
+            IT:   3  NORM:  0.456445003E+03
+            IT:   4  NORM:  0.439657160E-04
+            Converged in   4 iterations
+    End Step:  15
+ 
+    Step:  16 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.282324765E+10
+            IT:   1  NORM:  0.216327059E+07
+            IT:   2  NORM:  0.967380860E+02
+            IT:   3  NORM:  0.430368530E+03
+            IT:   4  NORM:  0.483863987E-04
+            Converged in   4 iterations
+    End Step:  16
+ 
+    Step:  17 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.277356690E+10
+            IT:   1  NORM:  0.213242936E+07
+            IT:   2  NORM:  0.939039424E+02
+            IT:   3  NORM:  0.407958116E+03
+            IT:   4  NORM:  0.542784110E-04
+            Converged in   4 iterations
+    End Step:  17
+ 
+    Step:  18 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.272517231E+10
+            IT:   1  NORM:  0.210242287E+07
+            IT:   2  NORM:  0.914389502E+02
+            IT:   3  NORM:  0.388677519E+03
+            IT:   4  NORM:  0.328822061E-04
+            Converged in   4 iterations
+    End Step:  18
+ 
+    Step:  19 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.267801983E+10
+            IT:   1  NORM:  0.207320530E+07
+            IT:   2  NORM:  0.893048878E+02
+            IT:   3  NORM:  0.372092460E+03
+            IT:   4  NORM:  0.427551568E-04
+            Converged in   4 iterations
+    End Step:  19
+ 
+    Step:  20 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.263206730E+10
+            IT:   1  NORM:  0.204473683E+07
+            IT:   2  NORM:  0.874699066E+02
+            IT:   3  NORM:  0.357848943E+03
+            IT:   4  NORM:  0.454534311E-04
+            Converged in   4 iterations
+    End Step:  20
+ 
+    Step:  21 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.258727432E+10
+            IT:   1  NORM:  0.201698221E+07
+            IT:   2  NORM:  0.859073709E+02
+            IT:   3  NORM:  0.345656930E+03
+            IT:   4  NORM:  0.465010526E-04
+            Converged in   4 iterations
+    End Step:  21
+ 
+    Step:  22 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.254360221E+10
+            IT:   1  NORM:  0.198990986E+07
+            IT:   2  NORM:  0.846865757E+02
+            IT:   3  NORM:  0.335278112E+03
+            IT:   4  NORM:  0.339280814E-04
+            Converged in   4 iterations
+    End Step:  22
+ 
+    Step:  23 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.250101387E+10
+            IT:   1  NORM:  0.196349111E+07
+            IT:   2  NORM:  0.839200821E+02
+            IT:   3  NORM:  0.326516390E+03
+            IT:   4  NORM:  0.416908006E-04
+            Converged in   4 iterations
+    End Step:  23
+ 
+    Step:  24 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.245947375E+10
+            IT:   1  NORM:  0.193769974E+07
+            IT:   2  NORM:  0.833521606E+02
+            IT:   3  NORM:  0.319210482E+03
+            IT:   4  NORM:  0.317916274E-04
+            Converged in   4 iterations
+    End Step:  24
+ 
+    Step:  25 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.241894774E+10
+            IT:   1  NORM:  0.191251153E+07
+            IT:   2  NORM:  0.829743395E+02
+            IT:   3  NORM:  0.313228288E+03
+            IT:   4  NORM:  0.580474734E-04
+            Converged in   4 iterations
+    End Step:  25
+ 
+    Step:  26 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.237940313E+10
+            IT:   1  NORM:  0.188790399E+07
+            IT:   2  NORM:  0.827801867E+02
+            IT:   3  NORM:  0.308462532E+03
+            IT:   4  NORM:  0.388051849E-04
+            Converged in   4 iterations
+    End Step:  26
+ 
+    Step:  27 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.234080850E+10
+            IT:   1  NORM:  0.186385610E+07
+            IT:   2  NORM:  0.827652943E+02
+            IT:   3  NORM:  0.304827054E+03
+            IT:   4  NORM:  0.438007992E-04
+            Converged in   4 iterations
+    End Step:  27
+ 
+    Step:  28 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.230313369E+10
+            IT:   1  NORM:  0.184034814E+07
+            IT:   2  NORM:  0.837116142E+02
+            IT:   3  NORM:  0.302254368E+03
+            IT:   4  NORM:  0.381147838E-04
+            Converged in   4 iterations
+    End Step:  28
+ 
+    Step:  29 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.226634974E+10
+            IT:   1  NORM:  0.181736153E+07
+            IT:   2  NORM:  0.863712279E+02
+            IT:   3  NORM:  0.300693522E+03
+            IT:   4  NORM:  0.433739042E-04
+            Converged in   4 iterations
+    End Step:  29
+ 
+    Step:  30 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.223042881E+10
+            IT:   1  NORM:  0.179487872E+07
+            IT:   2  NORM:  0.894031001E+02
+            IT:   3  NORM:  0.300108594E+03
+            IT:   4  NORM:  0.417036936E-04
+            Converged in   4 iterations
+    End Step:  30
+ 
+    Step:  31 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.219534416E+10
+            IT:   1  NORM:  0.177288306E+07
+            IT:   2  NORM:  0.928300682E+02
+            IT:   3  NORM:  0.300477658E+03
+            IT:   4  NORM:  0.416874100E-04
+            Converged in   4 iterations
+    End Step:  31
+ 
+    Step:  32 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.216107006E+10
+            IT:   1  NORM:  0.175135875E+07
+            IT:   2  NORM:  0.966806792E+02
+            IT:   3  NORM:  0.301792375E+03
+            IT:   4  NORM:  0.465606718E-04
+            Converged in   4 iterations
+    End Step:  32
+ 
+    Step:  33 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.212758179E+10
+            IT:   1  NORM:  0.173029074E+07
+            IT:   2  NORM:  0.100989585E+03
+            IT:   3  NORM:  0.304057539E+03
+            IT:   4  NORM:  0.318214297E-04
+            Converged in   4 iterations
+    End Step:  33
+ 
+    Step:  34 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.209485556E+10
+            IT:   1  NORM:  0.170966470E+07
+            IT:   2  NORM:  0.105798727E+03
+            IT:   3  NORM:  0.307291385E+03
+            IT:   4  NORM:  0.364235311E-04
+            Converged in   4 iterations
+    End Step:  34
+ 
+    Step:  35 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.206286847E+10
+            IT:   1  NORM:  0.168946694E+07
+            IT:   2  NORM:  0.111158161E+03
+            IT:   3  NORM:  0.311526278E+03
+            IT:   4  NORM:  0.381170321E-04
+            Converged in   4 iterations
+    End Step:  35
+ 
+    Step:  36 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.203159848E+10
+            IT:   1  NORM:  0.166968436E+07
+            IT:   2  NORM:  0.117127456E+03
+            IT:   3  NORM:  0.316809615E+03
+            IT:   4  NORM:  0.325632864E-04
+            Converged in   4 iterations
+    End Step:  36
+ 
+    Step:  37 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.200102437E+10
+            IT:   1  NORM:  0.165030443E+07
+            IT:   2  NORM:  0.123777476E+03
+            IT:   3  NORM:  0.323205426E+03
+            IT:   4  NORM:  0.371065689E-04
+            Converged in   4 iterations
+    End Step:  37
+ 
+    Step:  38 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.197112570E+10
+            IT:   1  NORM:  0.163131515E+07
+            IT:   2  NORM:  0.131192488E+03
+            IT:   3  NORM:  0.330796573E+03
+            IT:   4  NORM:  0.459189760E-04
+            Converged in   4 iterations
+    End Step:  38
+ 
+    Step:  39 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.194188279E+10
+            IT:   1  NORM:  0.161270501E+07
+            IT:   2  NORM:  0.139473020E+03
+            IT:   3  NORM:  0.339687537E+03
+            IT:   4  NORM:  0.320803374E-04
+            Converged in   4 iterations
+    End Step:  39
+ 
+    Step:  40 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.191327666E+10
+            IT:   1  NORM:  0.159493916E+07
+            IT:   2  NORM:  0.148739400E+03
+            IT:   3  NORM:  0.350008442E+03
+            IT:   4  NORM:  0.519361347E-04
+            Converged in   4 iterations
+    End Step:  40
+ 
+    Step:  41 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.188528903E+10
+            IT:   1  NORM:  0.157794959E+07
+            IT:   2  NORM:  0.159136031E+03
+            IT:   3  NORM:  0.361919687E+03
+            IT:   4  NORM:  0.438223360E-04
+            Converged in   4 iterations
+    End Step:  41
+ 
+    Step:  42 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.185790225E+10
+            IT:   1  NORM:  0.156126048E+07
+            IT:   2  NORM:  0.170837530E+03
+            IT:   3  NORM:  0.375618775E+03
+            IT:   4  NORM:  0.502590556E-04
+            Converged in   4 iterations
+    End Step:  42
+ 
+    Step:  43 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.183109932E+10
+            IT:   1  NORM:  0.154486413E+07
+            IT:   2  NORM:  0.184056085E+03
+            IT:   3  NORM:  0.391348561E+03
+            IT:   4  NORM:  0.456356211E-04
+            Converged in   4 iterations
+    End Step:  43
+ 
+    Step:  44 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.180486382E+10
+            IT:   1  NORM:  0.152875308E+07
+            IT:   2  NORM:  0.199176844E+03
+            IT:   3  NORM:  0.409408608E+03
+            IT:   4  NORM:  0.453838147E-04
+            Converged in   4 iterations
+    End Step:  44
+ 
+    Step:  45 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.177917994E+10
+            IT:   1  NORM:  0.151292012E+07
+            IT:   2  NORM:  0.216543041E+03
+            IT:   3  NORM:  0.430170052E+03
+            IT:   4  NORM:  0.467004720E-04
+            Converged in   4 iterations
+    End Step:  45
+ 
+    Step:  46 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.175403238E+10
+            IT:   1  NORM:  0.149735827E+07
+            IT:   2  NORM:  0.236448278E+03
+            IT:   3  NORM:  0.454095450E+03
+            IT:   4  NORM:  0.609271228E-04
+            Converged in   4 iterations
+    End Step:  46
+ 
+    Step:  47 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.172948941E+10
+            IT:   1  NORM:  0.148206074E+07
+            IT:   2  NORM:  0.259404443E+03
+            IT:   3  NORM:  0.481766029E+03
+            IT:   4  NORM:  0.768641476E-04
+            Converged in   4 iterations
+    End Step:  47
+ 
+    Step:  48 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.170545952E+10
+            IT:   1  NORM:  0.146702098E+07
+            IT:   2  NORM:  0.286061948E+03
+            IT:   3  NORM:  0.513918943E+03
+            IT:   4  NORM:  0.784281219E-04
+            Converged in   4 iterations
+    End Step:  48
+ 
+    Step:  49 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.168192226E+10
+            IT:   1  NORM:  0.145223263E+07
+            IT:   2  NORM:  0.317257461E+03
+            IT:   3  NORM:  0.551499250E+03
+            IT:   4  NORM:  0.876395497E-04
+            Converged in   4 iterations
+    End Step:  49
+ 
+    Step:  50 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.165886423E+10
+            IT:   1  NORM:  0.143768954E+07
+            IT:   2  NORM:  0.354081711E+03
+            IT:   3  NORM:  0.595733997E+03
+            IT:   4  NORM:  0.110741938E-03
+            Converged in   4 iterations
+    End Step:  50
+ 
+End Load Case:   1
+ 
+ 
+ 
+ 
+ Finite Element Analysis: CPU Time =   9.08001279830933      [s]
+ 
+ 
+ ---------------------------------------------------------
+ POST PROCESSING
+ ---------------------------------------------------------
+ 
+ Reading Post Processing File: Post_Processing.post
+ 
+ Post Processing Results...
+ 
+ 
+ CPU Time =  0.580000877380371      [s]
+ ---------------------------------------------------------
+ 
+ 

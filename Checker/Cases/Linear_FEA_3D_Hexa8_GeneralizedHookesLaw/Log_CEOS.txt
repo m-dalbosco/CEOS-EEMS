@@ -1,0 +1,51 @@
+ ---------------------------------------------------------
+                          CEOS
+ ---------------------------------------------------------
+ 
+ Settings File Name: Settings.dat
+ 
+ Problem will be solved
+ 
+ Problem will be postprocessed
+ PostProcessing File Name: Post_Processing.post
+ 
+ Opening Input File:Settings.dat
+ Reading Input File:Settings.dat
+ 
+ Input File Closed
+ 
+ ---------------------------------------------------------
+ SOLVING
+ ---------------------------------------------------------
+Load Case:   1
+ 
+    Step:   1 (LC:   1)
+ 
+        Cut Back:   0
+            SubStep:   0 (Alpha:  1.0000)
+            IT:   0  NORM:  0.269230769E+10
+            IT:   1  NORM:  0.499933958E-05
+            Converged in   1 iterations
+    End Step:   1
+ 
+End Load Case:   1
+ 
+ 
+ 
+ 
+ Finite Element Analysis: CPU Time =  0.290000438690186      [s]
+ 
+ 
+ ---------------------------------------------------------
+ POST PROCESSING
+ ---------------------------------------------------------
+ 
+ Reading Post Processing File: Post_Processing.post
+ 
+ Post Processing Results...
+ 
+ 
+ CPU Time =  4.999995231628418E-002 [s]
+ ---------------------------------------------------------
+ 
+ 
