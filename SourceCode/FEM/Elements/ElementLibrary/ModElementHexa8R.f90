@@ -294,7 +294,7 @@ module ElementHexa8R
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: x , id(8,3)
+            real(8) :: x , id(10,3)
             real(8),parameter::R1=1.0d0
 
 		    !************************************************************************************
@@ -304,7 +304,7 @@ module ElementHexa8R
 		    !************************************************************************************
 
             !Number of Gauss Points
-            nGP=8
+            nGP=10
 
             if (associated(NaturalCoordHexa8R)) return
             allocate( NaturalCoordHexa8R(nGP,3) , WeightHexa8R(nGP) )
@@ -319,6 +319,8 @@ module ElementHexa8R
             id(6,:)=[  R1 , -R1 ,  R1 ]
             id(7,:)=[  R1 ,  R1 ,  R1 ]
             id(8,:)=[ -R1 ,  R1 ,  R1 ]
+            id(9,:)=[  0.0d0 ,  0.0d0 ,  R1 ]
+            id(10,:)=[ 0.0d0 ,  0.0d0 ,  -R1 ]
 
             NaturalCoordHexa8R=id*x
 

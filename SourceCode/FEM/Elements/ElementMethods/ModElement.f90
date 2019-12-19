@@ -228,8 +228,11 @@ module Element
             real(8)							    :: detJ, DpDJbar
             real(8) , pointer , dimension(:)    :: Weight
             real(8) , pointer , dimension(:,:)  :: NaturalCoord
+            real(8) , pointer , dimension(:,:)  :: NaturalCoordFiber
+            real(8) , pointer , dimension(:,:)  :: NaturalCoordMatrix
             real(8) , pointer , dimension(:,:)  :: B , G , S , D, DB, SG, Bdiv
             real(8)                             :: FactorAxi
+            type(ClassElementProfile)           :: ElProfile
 
 		    !************************************************************************************
 
@@ -310,36 +313,85 @@ module Element
 
                 !Mterial and Geometric Stiffness Matrix (Nonlinear Part)
                 !Loop over gauss points
+                
+                !Call profile to check if element has reinforcement capabilities
+                call this%GetProfile(ElProfile)
+            
+                if (ElProfile%AcceptFiberReinforcement == .false.) then
+            
+                    ! Retrieving gauss points parameters for numerical integration - no fiber reinforcement
+                    call this%GetGaussPoints(NaturalCoord,Weight)
+                    
+                    do gp = 1, size(NaturalCoord,dim=1)
 
-                do gp = 1, size(NaturalCoord,dim=1)
+                        !Get tangent modulus
+                        call this%GaussPoints(gp)%GetTangentModulus(D)
 
-                    !Get tangent modulus
-                    call this%GaussPoints(gp)%GetTangentModulus(D)
+                        !Get matrix B, G and the Jacobian determinant
+                        call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G , detJ , FactorAxi )
 
-                    !Get matrix B, G and the Jacobian determinant
-                    call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G , detJ , FactorAxi )
-
-                    !Get Matrix of Stresses
-                    call this%GaussPoints(gp)%GetMatrixOfStresses(AnalysisSettings,S)
+                        !Get Matrix of Stresses
+                        call this%GaussPoints(gp)%GetMatrixOfStresses(AnalysisSettings,S)
 
 
-                    !Element stiffness matrix
-                    !---------------------------------------------------------------------------------------------------
+                        !Element stiffness matrix
+                        !---------------------------------------------------------------------------------------------------
 
-                    ! Computes D*B
-                    call MatrixMatrixMultiply_Sym ( D, B, DB, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
+                        ! Computes D*B
+                        call MatrixMatrixMultiply_Sym ( D, B, DB, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
 
-                    ! Computes S*G
-                    call MatrixMatrixMultiply_Sym ( S, G, SG, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
+                        ! Computes S*G
+                        call MatrixMatrixMultiply_Sym ( S, G, SG, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
 
-                    ! Computes Ke = Kg + Km
-                    !Matrix Km
-                    call MatrixMatrixMultiply_Trans ( B, DB, Ke, Weight(gp)*detJ*FactorAxi, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+                        ! Computes Ke = Kg + Km
+                        !Matrix Km
+                        call MatrixMatrixMultiply_Trans ( B, DB, Ke, Weight(gp)*detJ*FactorAxi, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
 
-                    !Matrix Kg
-                    call MatrixMatrixMultiply_Trans ( G, SG, Ke, Weight(gp)*detJ*FactorAxi, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+                        !Matrix Kg
+                        call MatrixMatrixMultiply_Trans ( G, SG, Ke, Weight(gp)*detJ*FactorAxi, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
 
                 enddo
+                
+                else
+                
+                    ! Retrieving gauss points parameters for numerical integration - with fiber reinforcement
+                    call this%GetGaussPoints(NaturalCoord,Weight)
+                
+                    NaturalCoordMatrix => NaturalCoord(1:8,:)
+                    NaturalCoordFiber => NaturalCoord(9:,:)
+                    NaturalCoord => NaturalCoordMatrix
+                    
+                    do gp = 1, size(NaturalCoord,dim=1)
+
+                        !Get tangent modulus
+                        call this%GaussPoints(gp)%GetTangentModulus(D)
+
+                        !Get matrix B, G and the Jacobian determinant
+                        call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G , detJ , FactorAxi )
+
+                        !Get Matrix of Stresses
+                        call this%GaussPoints(gp)%GetMatrixOfStresses(AnalysisSettings,S)
+
+
+                        !Element stiffness matrix
+                        !---------------------------------------------------------------------------------------------------
+
+                        ! Computes D*B
+                        call MatrixMatrixMultiply_Sym ( D, B, DB, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
+
+                        ! Computes S*G
+                        call MatrixMatrixMultiply_Sym ( S, G, SG, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
+
+                        ! Computes Ke = Kg + Km
+                        !Matrix Km
+                        call MatrixMatrixMultiply_Trans ( B, DB, Ke, Weight(gp)*detJ*FactorAxi, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+
+                        !Matrix Kg
+                        call MatrixMatrixMultiply_Trans ( G, SG, Ke, Weight(gp)*detJ*FactorAxi, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+
+                    enddo
+                
+                endif
 
             elseif (AnalysisSettings%ElementTech == ElementTechnologies%Mean_Dilatation) then
 
@@ -425,8 +477,11 @@ module Element
             real(8)							    :: detJ
             real(8) , pointer , dimension(:)    :: Weight , Cauchy
             real(8) , pointer , dimension(:,:)  :: NaturalCoord
+            real(8) , pointer , dimension(:,:)  :: NaturalCoordFiber
+            real(8) , pointer , dimension(:,:)  :: NaturalCoordMatrix
             real(8) , pointer , dimension(:,:)  :: B , G
             real(8)                             :: FactorAxi
+            type(ClassElementProfile)           :: ElProfile
 		    !************************************************************************************
 
 		    !************************************************************************************
@@ -448,29 +503,65 @@ module Element
 
             ! Allocating memory for the Cauchy Stress (Plain States, Axisymmetric or 3D)
             Cauchy => Stress_Memory( 1:AnalysisSettings%StressSize )
+            
+            !Call profile to check if element has reinforcement capabilities
+            call this%GetProfile(ElProfile)
+            
+            if (ElProfile%AcceptFiberReinforcement == .false.) then
+            
+                ! Retrieving gauss points parameters for numerical integration - no fiber reinforcement
+                call this%GetGaussPoints(NaturalCoord,Weight)
+                
+                !Loop over gauss points
+                do gp = 1, size(NaturalCoord,dim=1)
 
-            ! Retrieving gauss points parameters for numerical integration
-            call this%GetGaussPoints(NaturalCoord,Weight)
+                    !Get Cauchy Stress
+                    Cauchy => this%GaussPoints(gp)%Stress
 
-            !Loop over gauss points
-            do gp = 1, size(NaturalCoord,dim=1)
+                    !Get matrix B and the Jacobian determinant
+                    call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G, detJ , FactorAxi)
 
-                !Get Cauchy Stress
-                Cauchy => this%GaussPoints(gp)%Stress
+                    if (detJ <= 1.0d-13) then
+                        call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
+                        return
+                    endif
 
-                !Get matrix B and the Jacobian determinant
-                call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G, detJ , FactorAxi)
+                    !Element internal force vector
+                    call MatrixVectorMultiply ( 'T', B, Cauchy( 1:size(B,1) ), Fe, FactorAxi*Weight(gp)*detJ, 1.0d0 ) !y := alpha*op(A)*x + beta*y
 
-                if (detJ <= 1.0d-13) then
-                    call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
-                    return
-                endif
+                enddo
+                
+            else
+            
+                ! Retrieving gauss points parameters for numerical integration - with fiber reinforcement
+                call this%GetGaussPoints(NaturalCoord,Weight)
+                
+                NaturalCoordMatrix => NaturalCoord(1:8,:)
+                NaturalCoordFiber => NaturalCoord(9:,:)
+                NaturalCoord => NaturalCoordMatrix
+                
+                !Loop over gauss points
+                do gp = 1, size(NaturalCoord,dim=1)
 
-                !Element internal force vector
-                call MatrixVectorMultiply ( 'T', B, Cauchy( 1:size(B,1) ), Fe, FactorAxi*Weight(gp)*detJ, 1.0d0 ) !y := alpha*op(A)*x + beta*y
+                    !Get Cauchy Stress
+                    Cauchy => this%GaussPoints(gp)%Stress
 
+                    !Get matrix B and the Jacobian determinant
+                    call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G, detJ , FactorAxi)
 
-            enddo
+                    if (detJ <= 1.0d-13) then
+                        call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
+                        return
+                    endif
+
+                    !Element internal force vector
+                    call MatrixVectorMultiply ( 'T', B, Cauchy( 1:size(B,1) ), Fe, FactorAxi*Weight(gp)*detJ, 1.0d0 ) !y := alpha*op(A)*x + beta*y
+
+                enddo
+                
+            endif
+           
+
 		    !************************************************************************************
 
         end subroutine
