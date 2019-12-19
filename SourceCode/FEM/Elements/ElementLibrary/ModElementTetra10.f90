@@ -70,6 +70,7 @@ module ElementTetra10
             GeometryType = GeometryTypes%Tetrahedra     , &
             FullIntegrationCapable = .true.             , &
             MeanDilatationCapable=.false.               , &
+            FiberReinforcementCapable=.false. , &
             ElementDimension = 3 )
 
         end subroutine

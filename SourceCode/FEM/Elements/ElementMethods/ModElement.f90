@@ -79,6 +79,7 @@ module Element
         logical :: IsQuadratic = .false.
         logical :: AcceptFullIntegration = .false.
         logical :: AcceptMeanDilatation = .false.
+        logical :: AcceptFiberReinforcement = .false.
 
         contains
 
@@ -171,10 +172,10 @@ module Element
 
 
 
-        subroutine LoadProfile(this , ElementType , NumberOfNodes , IsQuadratic , GeometryType , FullIntegrationCapable , MeanDilatationCapable , ElementDimension )
+        subroutine LoadProfile(this , ElementType , NumberOfNodes , IsQuadratic , GeometryType , FullIntegrationCapable , MeanDilatationCapable , FiberReinforcementCapable , ElementDimension )
             class(ClassElementProfile) :: this
             integer::ElementType,NumberOfNodes,GeometryType , ElementDimension
-            logical::IsQuadratic,FullIntegrationCapable,MeanDilatationCapable
+            logical::IsQuadratic,FullIntegrationCapable,MeanDilatationCapable,FiberReinforcementCapable
 
             this % ElementType = ElementType
             this % NumberOfNodes = NumberOfNodes
@@ -182,6 +183,7 @@ module Element
             this % GeometryType = GeometryType
             this % AcceptFullIntegration = FullIntegrationCapable
             this % AcceptMeanDilatation = MeanDilatationCapable
+            this % AcceptFiberReinforcement = FiberReinforcementCapable
             this % ElementDimension = ElementDimension
 
         end subroutine

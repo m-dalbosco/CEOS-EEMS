@@ -883,6 +883,9 @@ contains
                         case (92) ! Ansys Element 92 - Tetra10
                             ndime = 3
                             ElemType = ElementTypes%Tetra10
+                       case (264) ! Ansys Element 264 - Hexa8R
+                            ndime = 3
+                            ElemType = ElementTypes%Hexa8R
                         case default
                             write(*,*)trim(Line)
                             stop 'Error: Ansys Element Type Not Identified'
@@ -970,7 +973,13 @@ contains
                             do i = 1,ENnodes-1
                                 ElemConec(4-i) = AuxString(11+i)
                             enddo
+                            
+                        else if (ElemType == ElementTypes%Hexa8R) then
 
+                            do i = 1,ENnodes
+                                ElemConec(i) = AuxString(11+i)
+                            enddo
+                            
                         endif
 
                         call ElementConstructor( ElementList(ElemID)%el , ElemConec(1:ENnodes) ,ElemType , GlobalNodesList, MaterialID)

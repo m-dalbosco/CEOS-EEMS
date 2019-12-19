@@ -62,6 +62,7 @@ module ElementQuad4
             GeometryType = GeometryTypes % Quadrilateral   , &
             FullIntegrationCapable = .true.                , &
             MeanDilatationCapable=.true. , &
+            FiberReinforcementCapable=.false. , &
             ElementDimension = 2 )
 
         end subroutine

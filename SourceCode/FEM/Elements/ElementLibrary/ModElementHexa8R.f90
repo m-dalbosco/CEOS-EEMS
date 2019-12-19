@@ -1,7 +1,7 @@
 !##################################################################################################
-! This module has the attributes and methods of the three-node triangle linear element with
-! full integration
-! ID -> Tri3 = 110
+! This module has the attributes and methods of the eight-node hexahedra linear element with
+! full integration and fiber reinforcement
+! ID -> Hexa8R = 410
 !--------------------------------------------------------------------------------------------------
 ! Date: 2014/02
 !
@@ -12,7 +12,7 @@
 ! Modifications:
 ! Date:         Author:
 !##################################################################################################
-module ElementTri3
+module ElementHexa8R
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	! DECLARATIONS OF VARIABLES
@@ -23,57 +23,57 @@ module ElementTri3
 
 	! Global variables within the module
 	! -------------------------------------------------------------------------------------------
-    real(8), pointer , dimension(:,:) :: NaturalCoordTri3 => null()
-    real(8), pointer , dimension(:)   :: WeightTri3       => null()
+    real(8), pointer , dimension(:,:) :: NaturalCoordHexa8R => null()
+    real(8), pointer , dimension(:)   :: WeightHexa8R       => null()
 
     !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    ! ClassElementTri3: Attributes and methods of the element Tri3
+    ! ClassElementHexa8R: Attributes and methods of the element Hexa8R
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    type, extends(ClassElement) :: ClassElementTri3
+    type, extends(ClassElement) :: ClassElementHexa8R
 
         ! Class Attributes: Inherited from ClassElement
         !--------------------------------------------------------------------------------------------
         contains
             ! Class Methods
             !--------------------------------------------------------------------------------------
-            procedure :: GetProfile          => GetProfile_Tri3
-            procedure :: GetGaussPoints      => GetGaussPoints_Tri3
-            procedure :: GetNumberOfNodes    => GetNumberOfNodes_Tri3
-            procedure :: GetShapeFunctions   => GetShapeFunctions_Tri3
-            procedure :: GetDifShapeFunctions=> GetDifShapeFunctions_Tri3
-            procedure :: AllocateGaussPoints => AllocateGaussPointsParameters_Tri3
+            procedure :: GetProfile          => GetProfile_Hexa8R
+            procedure :: GetGaussPoints      => GetGaussPoints_Hexa8R
+            procedure :: GetNumberOfNodes    => GetNumberOfNodes_Hexa8R
+            procedure :: GetShapeFunctions   => GetShapeFunctions_Hexa8R
+            procedure :: GetDifShapeFunctions=> GetDifShapeFunctions_Hexa8R
+            procedure :: AllocateGaussPoints => AllocateGaussPointsParameters_Hexa8R
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
     contains
 
-        subroutine GetProfile_Tri3(this,Profile)
-            class(ClassElementTri3)::this
+        subroutine GetProfile_Hexa8R(this,Profile)
+            class(ClassElementHexa8R)::this
             type(ClassElementProfile)::Profile
 
-            call Profile % LoadProfile( 0  , &
-            NumberOfNodes = 3                              , &
+            call Profile % LoadProfile( 0                 , &
+            NumberOfNodes = 8                              , &
             IsQuadratic = .false.                          , &
-            GeometryType = GeometryTypes % Triangle        , &
+            GeometryType = GeometryTypes %  Hexahedra      , &
             FullIntegrationCapable = .true.                , &
-            MeanDilatationCapable=.true.                   , &
-            FiberReinforcementCapable=.false. , &
-            ElementDimension = 2 )
+            MeanDilatationCapable=.true. , &
+            FiberReinforcementCapable=.true. , &
+            ElementDimension = 3 )
 
         end subroutine
 
         !==========================================================================================
-        ! Method GetGaussPoints_Tri3:  This method points to the natural coordinates and weights
+        ! Method GetGaussPoints_Hexa8R:  This method points to the natural coordinates and weights
         ! used in the Gaussian Quadrature.
         !------------------------------------------------------------------------------------------
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine GetGaussPoints_Tri3(this, NaturalCoord, Weight)
+        subroutine GetGaussPoints_Hexa8R(this, NaturalCoord, Weight)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -84,7 +84,7 @@ module ElementTri3
 
             ! Object
             ! -----------------------------------------------------------------------------------
-            class(ClassElementTri3) :: this
+            class(ClassElementHexa8R) :: this
 
             ! Input/Output variables
             ! -----------------------------------------------------------------------------------
@@ -94,11 +94,11 @@ module ElementTri3
 		    !************************************************************************************
 
 		    !************************************************************************************
-            ! POINT TO Tri3 METHODS
+            ! POINT TO Hexa8R METHODS
 		    !************************************************************************************
 
-            NaturalCoord => NaturalCoordTri3
-            Weight       => WeightTri3
+            NaturalCoord => NaturalCoordHexa8R
+            Weight       => WeightHexa8R
 
 		    !************************************************************************************
 
@@ -106,12 +106,12 @@ module ElementTri3
         !==========================================================================================
 
         !==========================================================================================
-        ! Method GetNumberOfNodes_Tri3:  This method returns the number of nodes of the element
+        ! Method GetNumberOfNodes_Hexa8R:  This method returns the number of nodes of the element
         !------------------------------------------------------------------------------------------
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        function GetNumberOfNodes_Tri3(this) result(nNodes)
+        function GetNumberOfNodes_Hexa8R(this) result(nNodes)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -122,7 +122,7 @@ module ElementTri3
 
             ! Object
             ! -----------------------------------------------------------------------------------
-            class(ClassElementTri3) :: this
+            class(ClassElementHexa8R) :: this
 
             ! Output variables
             ! -----------------------------------------------------------------------------------
@@ -131,10 +131,10 @@ module ElementTri3
 		    !************************************************************************************
 
 		    !************************************************************************************
-            ! NUMBER OF NODES - TRI3
+            ! NUMBER OF NODES - Hexa8R
 		    !************************************************************************************
 
-            nNodes=3
+            nNodes=8
 
 		    !************************************************************************************
 
@@ -142,23 +142,23 @@ module ElementTri3
         !==========================================================================================
 
         !==========================================================================================
-        ! Method GetShapeFunctions_Tri3:  This method returns the shape funtions of the element
+        ! Method GetShapeFunctions_Hexa8R:  This method returns the shape funtions of the element
         !------------------------------------------------------------------------------------------
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine GetShapeFunctions_Tri3(this , NaturalCoord , ShapeFunctions )
+        subroutine GetShapeFunctions_Hexa8R(this , NaturalCoord , ShapeFunctions )
 
-			!************************************************************************************
+            !************************************************************************************
             ! DECLARATIONS OF VARIABLES
 		    !************************************************************************************
             ! Modules and implicit declarations
             ! -----------------------------------------------------------------------------------
-            implicit none
+             implicit none
 
             ! Object
             ! ----------------------------------------------------------------------------------
-            class(ClassElementTri3) :: this
+            class(ClassElementHexa8R) :: this
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
@@ -170,36 +170,47 @@ module ElementTri3
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8)             :: xi , eta
+            integer             :: i
+            real(8)             :: xi , eta , zeta , id(8,3)
             real(8) , parameter :: R1=1.0d0
 
-		    !************************************************************************************
+		    !************************************************************************************--
 
             !************************************************************************************
-            ! SHAPE FUNTIONS - TRI3
+            ! SHAPE FUNTIONS - Hexa8R
       	    !************************************************************************************
 
-            xi = NaturalCoord(1) ; eta = NaturalCoord(2)
+            xi = NaturalCoord(1) ; eta = NaturalCoord(2) ; zeta = NaturalCoord(3)
 
-            ShapeFunctions(1) = R1 - xi - eta
-            ShapeFunctions(2) = xi
-            ShapeFunctions(3) = eta
+            id(1,:)=[ -R1 , -R1 , -R1 ]
+            id(2,:)=[  R1 , -R1 , -R1 ]
+            id(3,:)=[  R1 ,  R1 , -R1 ]
+            id(4,:)=[ -R1 ,  R1 , -R1 ]
+            id(5,:)=[ -R1 , -R1 ,  R1 ]
+            id(6,:)=[  R1 , -R1 ,  R1 ]
+            id(7,:)=[  R1 ,  R1 ,  R1 ]
+            id(8,:)=[ -R1 ,  R1 ,  R1 ]
+
+            do i=1,8
+                ShapeFunctions(i) = (R1 + id(i,1)*xi)*(R1 + id(i,2)*eta)*(R1 + id(i,3)*zeta) / 8.0d0
+            enddo
 
       	    !************************************************************************************
 
         end subroutine
         !==========================================================================================
 
+
         !==========================================================================================
-        ! Method GetDifShapeFunctions_Tri3:  This method returns the shape funtions derivatives
+        ! Method GetDifShapeFunctions_Hexa8R:  This method returns the shape funtions derivatives
         ! of the element.
         !------------------------------------------------------------------------------------------
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine GetDifShapeFunctions_Tri3(this , NaturalCoord , DifShapeFunctions )
+        subroutine GetDifShapeFunctions_Hexa8R(this , NaturalCoord , DifShapeFunctions )
 
-			!************************************************************************************
+  			!************************************************************************************
             ! DECLARATIONS OF VARIABLES
 		    !************************************************************************************
             ! Modules and implicit declarations
@@ -208,7 +219,7 @@ module ElementTri3
 
             ! Object
             ! ----------------------------------------------------------------------------------
-            class(ClassElementTri3) :: this
+            class(ClassElementHexa8R) :: this
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
@@ -220,34 +231,51 @@ module ElementTri3
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8)             :: xi , eta
+            integer             :: i
+            real(8)             :: xi , eta , zeta , id(8,3)
             real(8) , parameter :: R1=1.0d0 , R0=0.0d0
 
 		    !************************************************************************************
 
       	    !************************************************************************************
-            ! SHAPE FUNTIONS DERIVATIVE- TRI3
+            ! SHAPE FUNTIONS DERIVATIVE- Hexa8R
       	    !************************************************************************************
 
-            xi = NaturalCoord(1) ; eta = NaturalCoord(2)
+            xi = NaturalCoord(1) ; eta = NaturalCoord(2) ; zeta = NaturalCoord(3)
 
-            DifShapeFunctions(1,1) = - R1 ; DifShapeFunctions(1,2) = - R1
-            DifShapeFunctions(2,1) =   R1 ; DifShapeFunctions(2,2) =   R0
-            DifShapeFunctions(3,1) =   R0 ; DifShapeFunctions(3,2) =   R1
+            id(1,:)=[ -R1 , -R1 , -R1 ]
+            id(2,:)=[  R1 , -R1 , -R1 ]
+            id(3,:)=[  R1 ,  R1 , -R1 ]
+            id(4,:)=[ -R1 ,  R1 , -R1 ]
+            id(5,:)=[ -R1 , -R1 ,  R1 ]
+            id(6,:)=[  R1 , -R1 ,  R1 ]
+            id(7,:)=[  R1 ,  R1 ,  R1 ]
+            id(8,:)=[ -R1 ,  R1 ,  R1 ]
 
+
+            do i=1,8
+                DifShapeFunctions(i,1) = id(i,1)*(R1 + id(i,2)*eta)*(R1 + id(i,3)*zeta) / 8.0d0
+            enddo
+            do i=1,8
+                DifShapeFunctions(i,2) = id(i,2)*(R1 + id(i,1)*xi)*(R1 + id(i,3)*zeta) / 8.0d0
+            enddo
+            do i=1,8
+                DifShapeFunctions(i,3) = id(i,3)*(R1 + id(i,1)*xi)*(R1 + id(i,2)*eta) / 8.0d0
+            enddo
+            
       	    !************************************************************************************
 
         end subroutine
         !==========================================================================================
 
         !==========================================================================================
-        ! Method AllocateGaussPointsParameters_Tri3: This method returns the natural coordinates
+        ! Method AllocateGaussPointsParameters_Hexa8R: This method returns the natural coordinates
         ! and weights used in the Gaussian Quadrature.
         !------------------------------------------------------------------------------------------
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine AllocateGaussPointsParameters_Tri3(this,nGP)
+        subroutine AllocateGaussPointsParameters_Hexa8R(this,nGP)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -258,7 +286,7 @@ module ElementTri3
 
             ! Object
             ! -----------------------------------------------------------------------------------
-            class(ClassElementTri3) :: this
+            class(ClassElementHexa8R) :: this
 
             ! Output variables
             ! -----------------------------------------------------------------------------------
@@ -266,29 +294,39 @@ module ElementTri3
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: x
+            real(8) :: x , id(8,3)
+            real(8),parameter::R1=1.0d0
 
 		    !************************************************************************************
 
 		    !************************************************************************************
-            ! PARAMETERS OF GAUSS POINTS - TRI3
+            ! PARAMETERS OF GAUSS POINTS - Hexa8R
 		    !************************************************************************************
 
             !Number of Gauss Points
-            nGP=1
+            nGP=8
 
-            if (associated(NaturalCoordTri3)) return
-            allocate( NaturalCoordTri3(nGP,2) , WeightTri3(nGP) )
+            if (associated(NaturalCoordHexa8R)) return
+            allocate( NaturalCoordHexa8R(nGP,3) , WeightHexa8R(nGP) )
 
-            x = 1.0d0/3.0d0
+            x=1.0d0/dsqrt(3.0d0)
 
-            NaturalCoordTri3(1,:)=[x,x]
+            id(1,:)=[ -R1 , -R1 , -R1 ]
+            id(2,:)=[  R1 , -R1 , -R1 ]
+            id(3,:)=[  R1 ,  R1 , -R1 ]
+            id(4,:)=[ -R1 ,  R1 , -R1 ]
+            id(5,:)=[ -R1 , -R1 ,  R1 ]
+            id(6,:)=[  R1 , -R1 ,  R1 ]
+            id(7,:)=[  R1 ,  R1 ,  R1 ]
+            id(8,:)=[ -R1 ,  R1 ,  R1 ]
 
-            WeightTri3(1)=0.5d0
+            NaturalCoordHexa8R=id*x
+
+            WeightHexa8R=1.0d0
 
 		    !************************************************************************************
 
-        end subroutine
+            end subroutine
         !==========================================================================================
 
 
