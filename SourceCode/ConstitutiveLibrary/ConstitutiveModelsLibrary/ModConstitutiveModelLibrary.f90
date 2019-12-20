@@ -31,6 +31,7 @@ module ConstitutiveModelLibrary
     use ModViscoelasticFiber
     use ModViscoelasticMatrix
     use ModViscoelasticMatrixFiber
+    use NeoHookeanFiberReinf
 
     ! Constitutive Models ID registered:
     type ClassConstitutiveModels
@@ -47,6 +48,7 @@ module ConstitutiveModelLibrary
         integer   :: ViscoelasticFiberModel         = 11
         integer   :: ViscoelasticMatrixModel        = 12
         integer   :: ViscoelasticMatrixFiberModel   = 13
+        integer   :: NeoHookeanFiberReinfModel      = 14
     end type
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -114,6 +116,8 @@ module ConstitutiveModelLibrary
             type(ClassViscoelasticMatrix_3D)           , pointer , dimension(:) :: ViscoMatrix_3D
 
             type(ClassViscoelasticMatrixFiber_3D)      , pointer , dimension(:) :: ViscoMatrixFiber_3D
+            
+            type(ClassNeoHookeanFiberReinf_3D)          , pointer , dimension(:) :: NHFR_3D
 ! TODO (Thiago#1#02/13/15): Trocar threeDimensional para 3D
 
 		    !************************************************************************************
@@ -372,6 +376,22 @@ module ConstitutiveModelLibrary
 
                     endif
                 ! -------------------------------------------------------------------------------
+                    
+                ! -------------------------------------------------------------------------------
+                ! Neo-Hookean Fiber Reinforced Model
+                ! -------------------------------------------------------------------------------
+                case (ConstitutiveModels % NeoHookeanFiberReinfModel)
+
+                    if ( AnalysisSettings%Hypothesis == HypothesisOfAnalysis%ThreeDimensional ) then
+
+                            allocate( NHFR_3D(nGP) )
+                            GaussPoints => NHFR_3D
+
+                    else
+                            call Error("Error: Neo Hookean Fiber Reinforced Model - analysis type not available.")
+
+                    endif
+                ! -------------------------------------------------------------------------------
 
                 case default
 
@@ -481,6 +501,10 @@ module ConstitutiveModelLibrary
             elseif ( Comp%CompareStrings('Matrix_And_Fiber_Viscoelastic', model) .and. (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) ) then
 
                 modelID = ConstitutiveModels%ViscoelasticMatrixFiberModel
+                
+            elseif ( Comp%CompareStrings('neo_hookean_fiber_reinforced', model) .and. (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) ) then
+
+                modelID = ConstitutiveModels%NeoHookeanFiberReinfModel
 
             else
 
