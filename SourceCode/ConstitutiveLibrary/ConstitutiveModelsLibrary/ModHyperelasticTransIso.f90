@@ -46,7 +46,7 @@ module ModHyperelasticTransIso
         type (HyperelasticTransIsoProperties), pointer :: Properties => null()
         
         ! Variables
-         real(8) , allocatable , dimension(:) :: Cauchy_Stress_Fiber, Cauchy_Stress_Matrix
+        real(8) , allocatable , dimension(:) :: Cauchy_Stress_Fiber, Cauchy_Stress_Matrix
 
         contains
 

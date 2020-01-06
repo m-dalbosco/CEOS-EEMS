@@ -2385,10 +2385,12 @@ module FEMAnalysis
             ! -----------------------------------------------------------------------------------
             real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX
             real(8) :: mX(3), NodalValuesX(50)
-            integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes
+            integer :: ElemRef, NodeRef, e, gp, gpf, n, NumberOfNodes
 
 
             real(8) , pointer , dimension(:,:) :: NaturalCoord
+            real(8) , pointer , dimension(:,:) :: NaturalCoordMatrix
+            real(8) , pointer , dimension(:,:) :: NaturalCoordFiber
             real(8) , pointer , dimension(:)   :: Weight
 
  		    !************************************************************************************
@@ -2396,7 +2398,43 @@ module FEMAnalysis
 		    !************************************************************************************
 ! TODO (Thiago#1#): Passar os enumeradores dos modelos para realizar as contas somente nos elementos que possuem o devido modelo material.
 
-
+            !Embedded fibers
+     
+            do e = 1 , size(this%ElementList)
+                
+                call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
+                
+                    NaturalCoordMatrix => NaturalCoord(1:8,:)
+                    NaturalCoordFiber => NaturalCoord(9:,:)
+            
+                do gp = 1,size(NaturalCoordMatrix,dim=1)
+            
+                    !Fibras Retas
+                    !----------------------
+                    mX(1) = 0.0d0
+                    mX(2) = 0.0d0
+                    mX(3) = 0.0d0
+                    !-----------------------
+            
+                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
+                    
+                enddo
+                
+                do gpf = size(NaturalCoordMatrix,dim=1),size(NaturalCoord,dim=1)
+            
+                    !Fibras Retas
+                    !----------------------
+                    mX(1) = 0.0d0
+                    mX(2) = 0.0d0
+                    mX(3) = 1.0d0
+                    !-----------------------
+            
+                    this%ElementList(e)%El%GaussPoints(gpf)%AdditionalVariables%mX = mX
+                    
+                enddo
+                
+            enddo
+            
             !####################################################################################
             ! Cálculo das tangentes da hélice
             !####################################################################################

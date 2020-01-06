@@ -19,6 +19,7 @@ module NeoHookeanFiberReinf
     ! --------------------------------------------------------------------------------------------
     use ConstitutiveModel
     use ModStatus
+    use MathRoutines    
     implicit none
 
 
@@ -29,7 +30,7 @@ module NeoHookeanFiberReinf
 
         ! Variables of material parameters
         !----------------------------------------------------------------------------------------------
-        real(8) :: G, BulkModulus
+        real(8) :: Gm, Km, Gc, Kc
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -49,7 +50,6 @@ module NeoHookeanFiberReinf
 
 		! Class Attributes : Usually the internal variables
 		!----------------------------------------------------------------------------------------
-        real(8) :: iv(6)
 
 		! Class Attributes : Material Properties
 		!----------------------------------------------------------------------------------------
@@ -66,10 +66,6 @@ module NeoHookeanFiberReinf
              procedure :: GetResult                    => GetResult_NeoHookeanFiberReinf
              procedure :: SwitchConvergedState         => SwitchConvergedState_NeoHookeanFiberReinf
              procedure :: CopyProperties               => CopyProperties_NeoHookeanFiberReinf
-
-             procedure :: LoadPropertiesFromVector            => LoadPropertiesFromVector_NeoHookeanFiberReinf
-             procedure :: LoadInternalVariablesFromVector     => LoadInternalVariablesFromVector_NeoHookeanFiberReinf
-             procedure :: ExportInternalVariablesToVector     => ExportInternalVariablesToVector_NeoHookeanFiberReinf
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -90,118 +86,6 @@ module NeoHookeanFiberReinf
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
     contains
-
-
-        !==========================================================================================
-        ! Method ConstitutiveModelConstructor_"NameOfTheMaterialModel": Routine that constructs the
-        ! Constitutive Model
-        !------------------------------------------------------------------------------------------
-        ! Modifications:
-        ! Date:         Author:
-        !==========================================================================================
-        subroutine LoadPropertiesFromVector_NeoHookeanFiberReinf(this,Props)
-
-		    !************************************************************************************
-            ! DECLARATIONS OF VARIABLES
-		    !************************************************************************************
-            ! Modules and implicit declarations
-            ! -----------------------------------------------------------------------------------
-
-            ! Object
-            ! -----------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
-
-            ! Input variables
-            ! -----------------------------------------------------------------------------------
-            real(8), dimension(:) :: Props
-
-		    !************************************************************************************
-            if (associated(this%Properties)) deallocate(this%Properties)
-
-            allocate (this%Properties)
-
-            ! Abaqus Properties
-            this%Properties%G           = 2.0d0*Props(1)
-            this%Properties%BulkModulus = 2.0d0/Props(2)
-
-		    !************************************************************************************
-
-        end subroutine
-        !==========================================================================================
-
-        !==========================================================================================
-        ! Method ConstitutiveModelConstructor_"NameOfTheMaterialModel": Routine that constructs the
-        ! Constitutive Model
-        !------------------------------------------------------------------------------------------
-        ! Modifications:
-        ! Date:         Author:
-        !==========================================================================================
-        subroutine LoadInternalVariablesFromVector_NeoHookeanFiberReinf(this,IntVars)
-
-		    !************************************************************************************
-            ! DECLARATIONS OF VARIABLES
-		    !************************************************************************************
-            ! Modules and implicit declarations
-            ! -----------------------------------------------------------------------------------
-
-            ! Object
-            ! -----------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
-
-            ! Input variables
-            ! -----------------------------------------------------------------------------------
-            real(8), dimension(:) :: IntVars
-
-		    !************************************************************************************
-
-            ! Abaqus Internal Variables
-
-            this%iv = IntVars
-
-
-		    !************************************************************************************
-
-        end subroutine
-        !==========================================================================================
-
-
-        !==========================================================================================
-        ! Method ConstitutiveModelConstructor_"NameOfTheMaterialModel": Routine that constructs the
-        ! Constitutive Model
-        !------------------------------------------------------------------------------------------
-        ! Modifications:
-        ! Date:         Author:
-        !==========================================================================================
-        subroutine ExportInternalVariablesToVector_NeoHookeanFiberReinf(this,IntVars)
-
-		    !************************************************************************************
-            ! DECLARATIONS OF VARIABLES
-		    !************************************************************************************
-            ! Modules and implicit declarations
-            ! -----------------------------------------------------------------------------------
-
-            ! Object
-            ! -----------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
-
-            ! Input variables
-            ! -----------------------------------------------------------------------------------
-            real(8), dimension(:) :: IntVars
-
-		    !************************************************************************************
-
-            ! Abaqus Internal Variables
-            IntVars = this%iv
-
-
-		    !************************************************************************************
-
-        end subroutine
-        !==========================================================================================
-
-
-
-
 
         !==========================================================================================
         ! Method ConstitutiveModelConstructor_"NameOfTheMaterialModel": Routine that constructs the
@@ -232,7 +116,7 @@ module NeoHookeanFiberReinf
  		    !************************************************************************************
             ! ALLOCATE THE STATE VARIABLES
 		    !************************************************************************************
-
+            
 		    !************************************************************************************
 
         end subroutine
@@ -266,7 +150,6 @@ module NeoHookeanFiberReinf
  		    !************************************************************************************
             ! DEALLOCATE THE STATE VARIABLES
 		    !************************************************************************************
-
 
 		    !************************************************************************************
 
@@ -302,7 +185,7 @@ module NeoHookeanFiberReinf
 
             ! Internal variables
             ! ---------------------------------------------------------------------------------
-		    character(len=100), dimension(2) :: ListOfOptions, ListOfValues
+		    character(len=100), dimension(4) :: ListOfOptions, ListOfValues
 		    logical, dimension(2)            :: FoundOption
 		    integer                          :: i
 		    !************************************************************************************
@@ -318,7 +201,7 @@ module NeoHookeanFiberReinf
 
             ! Inform how the properties are shown in the "Settings" file.
             !------------------------------------------------------------------------------------
-            ListOfOptions=["G","BulkModulus"]
+            ListOfOptions=["Gm","Km","Gc","Kc"]
             !------------------------------------------------------------------------------------
 
 		    !___________________   WARNIG! DO NOT CHANGE OR ERASE THIS BLOCK    _________________
@@ -328,8 +211,10 @@ module NeoHookeanFiberReinf
             ! Set the material properties: this%Properties%"NameOfTheProperty"
             ! Obs.: ListOfValues index must match with ListOfOptions index
             !------------------------------------------------------------------------------------
-            this%Properties%G = ListOfValues(1)
-            this%Properties%BulkModulus = ListOfValues(2)
+            this%Properties%Gm = ListOfValues(1)
+            this%Properties%Km = ListOfValues(2)
+            this%Properties%Gc = ListOfValues(3)
+            this%Properties%Kc = ListOfValues(4)
             !------------------------------------------------------------------------------------
 
 
@@ -400,7 +285,8 @@ module NeoHookeanFiberReinf
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             real(8) :: F(3,3), C(3,3), Cinv(3,3),Ciso(3,3), I(3,3), S(3,3), Sfric(3,3), devSfric(3,3)
-            real(8) :: J, p, BulkModulus, G
+            real(8) :: mX(3), A(3,3)
+            real(8) :: J, p, Km, Gm, Kc, Gc, I4
 
 		    !************************************************************************************
 
@@ -418,58 +304,73 @@ module NeoHookeanFiberReinf
 
             ! Optional: Retrieve Variables
             ! -----------------------------------------------------------------------------------
-            BulkModulus = this%Properties%BulkModulus
-            G           = this%Properties%G
-            F           = this%F
+            Km = this%Properties%Km
+            Gm = this%Properties%Gm
+            Kc = this%Properties%Kc
+            Gc = this%Properties%Gc
+            F  = this%F
+            mX = this%AdditionalVariables%mX
             ! -----------------------------------------------------------------------------------
 
-            ! Right-Cauchy Green Strain - Calculated in 3D Tensorial Format
+            ! Kinematic Variables - Calculated in 3D Tensorial Format
             ! -----------------------------------------------------------------------------------
             ! Identity
             I = 0.0d0
             I(1,1) = 1.0d0
             I(2,2) = 1.0d0
             I(3,3) = 1.0d0
-
-            ! Right-Cauchy Green Strain
-            C = matmul(transpose(F),F)
-            ! -----------------------------------------------------------------------------------
-
-
-            ! Modified Second Piola-Kirchhoff Stress - Calculated in 3D Tensorial Format
-            ! -----------------------------------------------------------------------------------
+            
             ! Jacobian
             J = det(F)
-
+            
+            ! Right-Cauchy Green Strain
+            C = matmul(transpose(F),F)
+            
             ! Inverse of Right-Cauchy Green Strain
             Cinv = inverse(C)
-
+            
             ! Isochoric part of the Right-Cauchy Green Strain
             Ciso = (J**(-2.0d0/3.0d0))*C
+            
+            !Material Structural Tensor
+            A = Tensor_Product(mX,mX)
 
-            ! Second Piola-Kirchhoff Frictional
-            Sfric = G*I
-
-            ! Hydrostatic Pressure
-            !p = BulkModulus*( 1.0d0 - (1.0d0/J) )
-            p = BulkModulus*( J - 1.0d0  )
-
-            ! Deviatoric part of the Second Piola-Kirchhoff Frictional
-            devSfric = Sfric - (1.0d0/3.0d0)*Tensor_Inner_Product(Sfric,C)*Cinv
-
-
-            ! Modified Second Piola-Kirchhoff Stress
-            S = (J**(-2.0d0/3.0d0))*devSfric + J*p*Cinv
+            !Fourth Invariant
+            I4 = Tensor_Inner_Product(C,A)
+            
             ! -----------------------------------------------------------------------------------
 
-            ! Modified Cauchy Stress - Calculated in 3D Tensorial Format and converted to Voigt
-            ! notation.
-            ! -----------------------------------------------------------------------------------
-            S = matmul(matmul(F,S),transpose(F))/J
+            !if (norm(mX)==0) then
 
-            this%Stress = Convert_to_Voigt_3D_Sym( S )
-            ! -----------------------------------------------------------------------------------
+                ! Modified Second Piola-Kirchhoff Matrix Stress - Calculated in 3D Tensorial Format
+                ! -----------------------------------------------------------------------------------
 
+                ! Second Piola-Kirchhoff Frictional
+                Sfric = Gm*I
+
+                ! Hydrostatic Pressure
+                !p = Km*( 1.0d0 - (1.0d0/J) )
+                p = Km*( J - 1.0d0  )
+
+                ! Deviatoric part of the Second Piola-Kirchhoff Frictional
+                devSfric = Sfric - (1.0d0/3.0d0)*Tensor_Inner_Product(Sfric,C)*Cinv
+
+                ! Modified Second Piola-Kirchhoff Stress
+                S = (J**(-2.0d0/3.0d0))*devSfric + J*p*Cinv
+                ! -----------------------------------------------------------------------------------
+
+                ! Modified Cauchy Stress - Calculated in 3D Tensorial Format and converted to Voigt
+                ! notation.
+                ! -----------------------------------------------------------------------------------
+                S = matmul(matmul(F,S),transpose(F))/J
+
+                this%Stress = Convert_to_Voigt_3D_Sym( S )
+                ! -----------------------------------------------------------------------------------
+                
+            !else
+                
+            !endif
+            
 
 		    !************************************************************************************
 
@@ -503,9 +404,10 @@ module NeoHookeanFiberReinf
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: J, p, BulkModulus, G, d2PSIvol_dJ2
+            real(8) :: J, p, Km, Gm, Kc, Gc, d2PSIvol_dJ2, I4
             real(8) :: F(3,3), C(3,3),Cinv(3,3), Ciso(3,3), Sfric(3,3), I(3,3)
-
+            
+            real(8) :: mX(3), A(3,3)
 
             real(8) :: CV(6), CinvV(6), CisoV(6), SfricV(6), devSfricV(6), SisoV(6)
             real(8) :: PmV(6,6) , PV(6,6), Diso(6,6), Dvol(6,6), Is(6,6), Daux(6,6)
@@ -520,9 +422,12 @@ module NeoHookeanFiberReinf
 
             ! Optional: Retrieve Variables
             ! -----------------------------------------------------------------------------------
-            BulkModulus = this%Properties%BulkModulus
-            G           = this%Properties%G
-            F           = this%F
+            Km = this%Properties%Km
+            Gm = this%Properties%Gm
+            Kc = this%Properties%Kc
+            Gc = this%Properties%Gc
+            F  = this%F
+            mX = this%AdditionalVariables%mX
             ! -----------------------------------------------------------------------------------
 
             ! Quantities calculated in 3D Tensorial Format
@@ -533,76 +438,99 @@ module NeoHookeanFiberReinf
             I(2,2) = 1.0d0
             I(3,3) = 1.0d0
 
-            ! Right-Cauchy Green Strain
-            C = matmul(transpose(F),F)
-
-            ! Inverse of Right-Cauchy Green Strain
-            Cinv = inverse(C)
-
-            ! Isochoric part of the Right-Cauchy Green Strain
-            Ciso = (J**(-2.0d0/3.0d0))*C
-
+            ! Kinematic Variables - Calculated in 3D Tensorial Format
+            ! -----------------------------------------------------------------------------------
+            ! Identity
+            I = 0.0d0
+            I(1,1) = 1.0d0
+            I(2,2) = 1.0d0
+            I(3,3) = 1.0d0
+            
             ! Jacobian
             J = det(F)
-
-            ! Second Piola-Kirchhoff Frictional
-            Sfric = G*I
-
-            ! Hydrostatic Pressure
-            !p = BulkModulus*( 1.0d0 - (1.0d0/J) )
-            p = BulkModulus*( J - 1.0d0  )
-
-            ! Derivative of Hydrostatic Pressure
-            !d2PSIvol_dJ2 = BulkModulus/(J**2.0d0)
-            d2PSIvol_dJ2 = BulkModulus
-
-            ! -----------------------------------------------------------------------------------
-            ! The subsequent computations are made in Voigt notation
-            ! -----------------------------------------------------------------------------------
-
-
-            ! Material tangent modulus in referential configuration
-            ! -----------------------------------------------------------------------------------
-
+            
             ! Right-Cauchy Green Strain
-            CV = Convert_to_Voigt(C)
-
+            C = matmul(transpose(F),F)
+            
             ! Inverse of Right-Cauchy Green Strain
-            CinvV = Convert_to_Voigt(Cinv)
-
+            Cinv = inverse(C)
+            
             ! Isochoric part of the Right-Cauchy Green Strain
-            CisoV = Convert_to_Voigt(Ciso)
+            Ciso = (J**(-2.0d0/3.0d0))*C
+            
+            !Material Structural Tensor
+            A = Tensor_Product(mX,mX)
 
-            ! Second Piola-Kirchhoff Frictional
-            SfricV = Convert_to_Voigt(Sfric)
+            !Fourth Invariant
+            I4 = Tensor_Inner_Product(C,A)
+            
+            !if (norm(mX)==0) then
+            
+                ! Matrix tangent modulus
+                ! -----------------------------------------------------------------------------------
 
-            ! Deviatoric part of the Second Piola-Kirchhoff Frictional
-            devSfricV = SfricV - (1.0d0/3.0d0)*Inner_Product_Voigt(SfricV,CV)*CinvV
+                ! Second Piola-Kirchhoff Frictional
+                Sfric = Gm*I
 
-            ! Isochoric part of the Second Piola-Kirchhoff
-            SisoV = (J**(-2.0d0/3.0d0))*devSfricV
+                ! Hydrostatic Pressure
+                !p = Km*( 1.0d0 - (1.0d0/J) )
+                p = Km*( J - 1.0d0  )
 
-            ! Modified Projection Operator
-            PmV = Square_Voigt(CinvV,CinvV) - (1.0d0/3.0d0)*Ball_Voigt(CinvV,CinvV)
+                ! Derivative of Hydrostatic Pressure
+                !d2PSIvol_dJ2 = Km/(J**2.0d0)
+                d2PSIvol_dJ2 = Km
+
+                ! -----------------------------------------------------------------------------------
+                ! The subsequent computations are made in Voigt notation
+                ! -----------------------------------------------------------------------------------
 
 
-            ! Isochoric part of the material tangent modulus in referential configuration
-            Diso = (2.0d0/3.0d0)*(J**(-2.0d0/3.0d0))*Inner_Product_Voigt(SfricV,CV)*PmV - &
-                   (2.0d0/3.0d0)*( Ball_Voigt(SisoV,CinvV) + Ball_Voigt(CinvV,SisoV) )
+                ! Material tangent modulus in referential configuration
+                ! -----------------------------------------------------------------------------------
 
-            ! Pressure component of the material tangent modulus in referential configuration
-            Dvol  = J*( p + J*d2PSIvol_dJ2 )*Ball_Voigt(CinvV,CinvV) - 2.0d0*J*p*Square_Voigt(CinvV,CinvV)
+                ! Right-Cauchy Green Strain
+                CV = Convert_to_Voigt(C)
 
-            ! Material tangent modulus in referential configuration
-            Daux = Diso + Dvol
+                ! Inverse of Right-Cauchy Green Strain
+                CinvV = Convert_to_Voigt(Cinv)
 
-            ! -----------------------------------------------------------------------------------
+                ! Isochoric part of the Right-Cauchy Green Strain
+                CisoV = Convert_to_Voigt(Ciso)
 
-            ! Push-Forward:
-            ! Computation of the spatial tangent modulus
-            ! -----------------------------------------------------------------------------------
-            D = Push_Forward_Voigt(Daux,F)
-            ! -----------------------------------------------------------------------------------
+                ! Second Piola-Kirchhoff Frictional
+                SfricV = Convert_to_Voigt(Sfric)
+
+                ! Deviatoric part of the Second Piola-Kirchhoff Frictional
+                devSfricV = SfricV - (1.0d0/3.0d0)*Inner_Product_Voigt(SfricV,CV)*CinvV
+
+                ! Isochoric part of the Second Piola-Kirchhoff
+                SisoV = (J**(-2.0d0/3.0d0))*devSfricV
+
+                ! Modified Projection Operator
+                PmV = Square_Voigt(CinvV,CinvV) - (1.0d0/3.0d0)*Ball_Voigt(CinvV,CinvV)
+
+
+                ! Isochoric part of the material tangent modulus in referential configuration
+                Diso = (2.0d0/3.0d0)*(J**(-2.0d0/3.0d0))*Inner_Product_Voigt(SfricV,CV)*PmV - &
+                        (2.0d0/3.0d0)*( Ball_Voigt(SisoV,CinvV) + Ball_Voigt(CinvV,SisoV) )
+
+                ! Pressure component of the material tangent modulus in referential configuration
+                Dvol  = J*( p + J*d2PSIvol_dJ2 )*Ball_Voigt(CinvV,CinvV) - 2.0d0*J*p*Square_Voigt(CinvV,CinvV)
+
+                ! Material tangent modulus in referential configuration
+                Daux = Diso + Dvol
+
+                ! -----------------------------------------------------------------------------------
+                
+            !else
+                
+            !endif
+
+                ! Push-Forward:
+                ! Computation of the spatial tangent modulus
+                ! -----------------------------------------------------------------------------------
+                D = Push_Forward_Voigt(Daux,F)
+                ! -----------------------------------------------------------------------------------
 
 		    !************************************************************************************
 
