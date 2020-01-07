@@ -56,11 +56,6 @@ MATERIAL
 	Km = 8.0e7
 	Gc = 8.0e8
 	Kc = 1.6e12
-	
-	!Material ID = 1
-	!Compressible_Neo_Hookean
-	!Mu = 7.6923E7
-	!Lambda = 1.1538E8
 
 	!Material ID = 1
 	!st_venant_kirchhoff
@@ -79,6 +74,11 @@ MATERIAL
 	!Yield Stress = 250.0E6
 	!Hardening Modulus = 21.0E9
 	
+	!Material ID = 1
+	!Neo_Hookean
+	!C10 = 1.0e0
+	!Bulk Modulus = 1.0e2
+
 	!Material ID = 1
 	!Neo_Hookean
 	!C10 = 5.0d9
