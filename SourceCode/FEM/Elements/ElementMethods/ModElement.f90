@@ -232,6 +232,7 @@ module Element
             real(8) , pointer , dimension(:,:)  :: NaturalCoordMatrix
             real(8) , pointer , dimension(:,:)  :: B , G , S , D, DB, SG, Bdiv
             real(8)                             :: FactorAxi
+            real(8)                             :: dV0f, dVf
             type(ClassElementProfile)           :: ElProfile
 
 		    !************************************************************************************
@@ -362,6 +363,9 @@ module Element
                     NaturalCoord => NaturalCoordMatrix
                     
                     do gp = 1, size(NaturalCoord,dim=1)
+                        
+                        !write(*,27) this%GaussPoints(gp)%AdditionalVariables%mX(1), this%GaussPoints(gp)%AdditionalVariables%mX(2), this%GaussPoints(gp)%AdditionalVariables%mX(3)
+                        !27 format('mX = (',F3.1,',',F3.1,',',F3.1,')')
 
                         !Get tangent modulus
                         call this%GaussPoints(gp)%GetTangentModulus(D)
@@ -390,6 +394,43 @@ module Element
                         call MatrixMatrixMultiply_Trans ( G, SG, Ke, Weight(gp)*detJ*FactorAxi, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
 
                     enddo
+                    
+                    !Loop over fiber gauss points
+                    do gp = (size(NaturalCoord,dim=1)+1), (size(NaturalCoord,dim=1) + size(NaturalCoordFiber,dim=1))
+                    
+                        !write(*,27) this%GaussPoints(gp)%AdditionalVariables%mX(1), this%GaussPoints(gp)%AdditionalVariables%mX(2), this%GaussPoints(gp)%AdditionalVariables%mX(3)
+                        !27 format('mX = (',F3.1,',',F3.1,',',F3.1,')')
+                    
+                        !Get tangent modulus
+                        call this%GaussPoints(gp)%GetTangentModulus(D)
+
+                        !Get matrix B, G and the Jacobian determinant
+                        call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G , detJ , FactorAxi )
+
+                        !Get Matrix of Stresses
+                        call this%GaussPoints(gp)%GetMatrixOfStresses(AnalysisSettings,S)
+
+                        !Element stiffness matrix
+                        !---------------------------------------------------------------------------------------------------
+
+                        ! Computes D*B
+                        call MatrixMatrixMultiply_Sym ( D, B, DB, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
+
+                        ! Computes S*G
+                        call MatrixMatrixMultiply_Sym ( S, G, SG, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
+
+                        dV0f = 6.283d-8
+                        dVf = det(this%GaussPoints(gp)%F)*dV0f
+                        
+                        ! Computes Ke = Kg + Km
+                        !Matrix Km
+                        call MatrixMatrixMultiply_Trans ( B, DB, Ke, 0.5d0*dVf*Weight(gp), 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+
+                        !Matrix Kg
+                        call MatrixMatrixMultiply_Trans ( G, SG, Ke, 0.5d0*dVf*Weight(gp), 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+
+                    enddo
+                    
                 
                 endif
 
@@ -481,6 +522,7 @@ module Element
             real(8) , pointer , dimension(:,:)  :: NaturalCoordMatrix
             real(8) , pointer , dimension(:,:)  :: B , G
             real(8)                             :: FactorAxi
+            real(8)                             :: dV0f, dVf
             type(ClassElementProfile)           :: ElProfile
 		    !************************************************************************************
 
@@ -540,11 +582,19 @@ module Element
                 NaturalCoordFiber => NaturalCoord(9:,:)
                 NaturalCoord => NaturalCoordMatrix
                 
-                !Loop over gauss points
+                !Loop over matrix gauss points
                 do gp = 1, size(NaturalCoord,dim=1)
-
+                    
+                    !write(*,27) this%GaussPoints(gp)%AdditionalVariables%mX(1), this%GaussPoints(gp)%AdditionalVariables%mX(2), this%GaussPoints(gp)%AdditionalVariables%mX(3)
+                    !27 format('mX = (',F3.1,',',F3.1,',',F3.1,')')
+                    
                     !Get Cauchy Stress
                     Cauchy => this%GaussPoints(gp)%Stress
+                    
+                    if (gp == size(NaturalCoord,dim=1)) then
+                        write(*,29) Cauchy(3)/1d+6
+                        29 format( 12x 'Z-stress = ',F7.4,' MPa')
+                    endif
 
                     !Get matrix B and the Jacobian determinant
                     call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G, detJ , FactorAxi)
@@ -556,6 +606,31 @@ module Element
 
                     !Element internal force vector
                     call MatrixVectorMultiply ( 'T', B, Cauchy( 1:size(B,1) ), Fe, FactorAxi*Weight(gp)*detJ, 1.0d0 ) !y := alpha*op(A)*x + beta*y
+
+                enddo
+                
+                !Loop over fiber gauss points
+                do gp = (size(NaturalCoord,dim=1)+1), (size(NaturalCoord,dim=1) + size(NaturalCoordFiber,dim=1))
+                    
+                    !write(*,27) this%GaussPoints(gp)%AdditionalVariables%mX(1), this%GaussPoints(gp)%AdditionalVariables%mX(2), this%GaussPoints(gp)%AdditionalVariables%mX(3)
+                    !27 format('mX = (',F3.1,',',F3.1,',',F3.1,')')
+                    
+                    !Get Cauchy Stress
+                    Cauchy => this%GaussPoints(gp)%Stress
+                    
+                    !Get matrix B and the Jacobian determinant
+                    call this%Matrix_B_and_G(AnalysisSettings, NaturalCoord(gp,:) , B, G, detJ , FactorAxi)
+
+                    if (detJ <= 1.0d-13) then
+                        call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
+                        return
+                    endif
+                    
+                    dV0f = 6.283d-8
+                    dVf = det(this%GaussPoints(gp)%F)*dV0f
+                    
+                    !Element internal force vector
+                    call MatrixVectorMultiply ( 'T', B, Cauchy( 1:size(B,1) ), Fe, 0.5d0*dVf*Weight(gp), 1.0d0 ) !y := alpha*op(A)*x + beta*y
 
                 enddo
                 

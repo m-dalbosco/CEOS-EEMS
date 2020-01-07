@@ -286,7 +286,7 @@ module NeoHookeanFiberReinf
             ! -----------------------------------------------------------------------------------
             real(8) :: F(3,3), C(3,3), Cinv(3,3),Ciso(3,3), I(3,3), S(3,3), Sfric(3,3), devSfric(3,3)
             real(8) :: mX(3), A(3,3)
-            real(8) :: J, p, Km, Gm, Kc, Gc, I4
+            real(8) :: J, p, Km, Gm, Kc, Gc, I4, str
 
 		    !************************************************************************************
 
@@ -310,6 +310,10 @@ module NeoHookeanFiberReinf
             Gc = this%Properties%Gc
             F  = this%F
             mX = this%AdditionalVariables%mX
+            
+            !write(*,27) mX(1), mX(2) , mX(3)
+            !27 format('mX = (',F3.1,',',F3.1,',',F3.1,')')
+            
             ! -----------------------------------------------------------------------------------
 
             ! Kinematic Variables - Calculated in 3D Tensorial Format
@@ -338,9 +342,12 @@ module NeoHookeanFiberReinf
             !Fourth Invariant
             I4 = Tensor_Inner_Product(C,A)
             
+            !Stretch
+            str = sqrt(I4)
+            
             ! -----------------------------------------------------------------------------------
 
-            !if (norm(mX)==0) then
+            if (norm(mX)==0) then
 
                 ! Modified Second Piola-Kirchhoff Matrix Stress - Calculated in 3D Tensorial Format
                 ! -----------------------------------------------------------------------------------
@@ -367,9 +374,15 @@ module NeoHookeanFiberReinf
                 this%Stress = Convert_to_Voigt_3D_Sym( S )
                 ! -----------------------------------------------------------------------------------
                 
-            !else
+            else
                 
-            !endif
+                !Fiber Second Piola stress
+                S = Gc*(1-(1/(str**3)))*A
+                
+                S = matmul(matmul(F,S),transpose(F))/J
+                this%Stress = Convert_to_Voigt_3D_Sym( S )
+                
+            endif
             
 
 		    !************************************************************************************
@@ -404,10 +417,10 @@ module NeoHookeanFiberReinf
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: J, p, Km, Gm, Kc, Gc, d2PSIvol_dJ2, I4
+            real(8) :: J, p, Km, Gm, Kc, Gc, d2PSIvol_dJ2, I4, str
             real(8) :: F(3,3), C(3,3),Cinv(3,3), Ciso(3,3), Sfric(3,3), I(3,3)
             
-            real(8) :: mX(3), A(3,3)
+            real(8) :: mX(3), A(3,3), Avoigt(6)
 
             real(8) :: CV(6), CinvV(6), CisoV(6), SfricV(6), devSfricV(6), SisoV(6)
             real(8) :: PmV(6,6) , PV(6,6), Diso(6,6), Dvol(6,6), Is(6,6), Daux(6,6)
@@ -460,11 +473,15 @@ module NeoHookeanFiberReinf
             
             !Material Structural Tensor
             A = Tensor_Product(mX,mX)
+            Avoigt = Convert_to_Voigt_3D_Sym(A)
 
             !Fourth Invariant
             I4 = Tensor_Inner_Product(C,A)
             
-            !if (norm(mX)==0) then
+            !Stretch
+            str = sqrt(I4)
+            
+            if (norm(mX)==0) then
             
                 ! Matrix tangent modulus
                 ! -----------------------------------------------------------------------------------
@@ -522,9 +539,12 @@ module NeoHookeanFiberReinf
 
                 ! -----------------------------------------------------------------------------------
                 
-            !else
+            else
                 
-            !endif
+                ! Fiber material tangent modulus
+                Daux = (3*Gc/(str**5))*Ball_Voigt(Avoigt,Avoigt)
+                
+            endif
 
                 ! Push-Forward:
                 ! Computation of the spatial tangent modulus

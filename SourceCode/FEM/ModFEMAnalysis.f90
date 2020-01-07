@@ -2420,7 +2420,7 @@ module FEMAnalysis
                     
                 enddo
                 
-                do gpf = size(NaturalCoordMatrix,dim=1),size(NaturalCoord,dim=1)
+                do gpf = (size(NaturalCoordMatrix,dim=1)+1),size(NaturalCoord,dim=1)
             
                     !Fibras Retas
                     !----------------------
