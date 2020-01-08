@@ -23,8 +23,10 @@ module ElementHexa8R
 
 	! Global variables within the module
 	! -------------------------------------------------------------------------------------------
-    real(8), pointer , dimension(:,:) :: NaturalCoordHexa8R => null()
-    real(8), pointer , dimension(:)   :: WeightHexa8R       => null()
+    real(8), pointer , dimension(:,:) :: NaturalCoordHexa8R      => null()
+    real(8), pointer , dimension(:)   :: WeightHexa8R            => null()
+    real(8), pointer , dimension(:,:) :: ExtraNaturalCoordHexa8R => null()
+    real(8), pointer , dimension(:)   :: ExtraWeightHexa8R       => null()
 
     !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
@@ -39,12 +41,14 @@ module ElementHexa8R
         contains
             ! Class Methods
             !--------------------------------------------------------------------------------------
-            procedure :: GetProfile          => GetProfile_Hexa8R
-            procedure :: GetGaussPoints      => GetGaussPoints_Hexa8R
-            procedure :: GetNumberOfNodes    => GetNumberOfNodes_Hexa8R
-            procedure :: GetShapeFunctions   => GetShapeFunctions_Hexa8R
-            procedure :: GetDifShapeFunctions=> GetDifShapeFunctions_Hexa8R
-            procedure :: AllocateGaussPoints => AllocateGaussPointsParameters_Hexa8R
+            procedure :: GetProfile               => GetProfile_Hexa8R
+            procedure :: GetGaussPoints           => GetGaussPoints_Hexa8R
+            procedure :: GetNumberOfNodes         => GetNumberOfNodes_Hexa8R
+            procedure :: GetShapeFunctions        => GetShapeFunctions_Hexa8R
+            procedure :: GetDifShapeFunctions     => GetDifShapeFunctions_Hexa8R
+            procedure :: AllocateGaussPoints      => AllocateGaussPointsParameters_Hexa8R
+            procedure :: GetExtraGaussPoints      => GetExtraGaussPoints_Hexa8R
+            procedure :: AllocateExtraGaussPoints => AllocateExtraGaussPointsParameters_Hexa8R
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -99,6 +103,45 @@ module ElementHexa8R
 
             NaturalCoord => NaturalCoordHexa8R
             Weight       => WeightHexa8R
+
+		    !************************************************************************************
+
+        end subroutine
+        !==========================================================================================
+        
+        !==========================================================================================
+        ! Method GetFiberGaussPoints_Hexa8R:  This method points to the natural coordinates and weights
+        ! used in the Gaussian Quadrature of the fibers.
+        !------------------------------------------------------------------------------------------
+        ! Modifications:
+        ! Date:         Author:
+        !==========================================================================================
+        subroutine GetExtraGaussPoints_Hexa8R(this, NaturalCoord, Weight)
+
+		    !************************************************************************************
+            ! DECLARATIONS OF VARIABLES
+		    !************************************************************************************
+            ! Modules and implicit declarations
+            ! -----------------------------------------------------------------------------------
+            implicit none
+
+            ! Object
+            ! -----------------------------------------------------------------------------------
+            class(ClassElementHexa8R) :: this
+
+            ! Input/Output variables
+            ! -----------------------------------------------------------------------------------
+            real(8) , pointer, dimension(:,:)  :: NaturalCoord
+            real(8) , pointer, dimension(:)    :: Weight
+
+		    !************************************************************************************
+
+		    !************************************************************************************
+            ! POINT TO Hexa8R FIBER METHODS
+		    !************************************************************************************
+
+            NaturalCoord => ExtraNaturalCoordHexa8R
+            Weight       => ExtraWeightHexa8R
 
 		    !************************************************************************************
 
@@ -294,7 +337,7 @@ module ElementHexa8R
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: x , id(10,3)
+            real(8) :: x , id(8,3)
             real(8),parameter::R1=1.0d0
 
 		    !************************************************************************************
@@ -304,7 +347,7 @@ module ElementHexa8R
 		    !************************************************************************************
 
             !Number of Gauss Points
-            nGP=10
+            nGP=8
 
             if (associated(NaturalCoordHexa8R)) return
             allocate( NaturalCoordHexa8R(nGP,3) , WeightHexa8R(nGP) )
@@ -319,12 +362,65 @@ module ElementHexa8R
             id(6,:)=[  R1 , -R1 ,  R1 ]
             id(7,:)=[  R1 ,  R1 ,  R1 ]
             id(8,:)=[ -R1 ,  R1 ,  R1 ]
-            id(9,:)=[  0.0d0 ,  0.0d0 ,  R1 ]
-            id(10,:)=[ 0.0d0 ,  0.0d0 ,  -R1 ]
 
             NaturalCoordHexa8R=id*x
 
             WeightHexa8R=1.0d0
+
+		    !************************************************************************************
+
+        end subroutine
+        !==========================================================================================
+        
+        !==========================================================================================
+        ! Method AllocateExtraGaussPointsParameters_Hexa8R: This method returns the natural coordinates
+        ! and weights used in the Gaussian Quadrature of the fibers
+        !------------------------------------------------------------------------------------------
+        ! Modifications:
+        ! Date:         Author:
+        !==========================================================================================
+        subroutine AllocateExtraGaussPointsParameters_Hexa8R(this,nGP)
+
+		    !************************************************************************************
+            ! DECLARATIONS OF VARIABLES
+		    !************************************************************************************
+            ! Modules and implicit declarations
+            ! -----------------------------------------------------------------------------------
+             implicit none
+
+            ! Object
+            ! -----------------------------------------------------------------------------------
+            class(ClassElementHexa8R) :: this
+
+            ! Output variables
+            ! -----------------------------------------------------------------------------------
+            integer , intent(inout) :: nGP
+
+            ! Internal variables
+            ! -----------------------------------------------------------------------------------
+            real(8) :: x , id(2,3)
+            real(8),parameter::R1=1.0d0
+
+		    !************************************************************************************
+
+		    !************************************************************************************
+            ! PARAMETERS OF GAUSS POINTS - Hexa8R
+		    !************************************************************************************
+
+            !Number of Gauss Points
+            nGP=2
+
+            if (associated(ExtraNaturalCoordHexa8R)) return
+            allocate( ExtraNaturalCoordHexa8R(nGP,3) , ExtraWeightHexa8R(nGP) )
+
+            x=1.0d0/dsqrt(3.0d0)
+
+            id(1,:)=[ 0.0d0 ,  0.0d0 ,  R1 ]
+            id(2,:)=[ 0.0d0 ,  0.0d0 , -R1 ]
+
+            ExtraNaturalCoordHexa8R=id*x
+
+            ExtraWeightHexa8R=1.0d0
 
 		    !************************************************************************************
 

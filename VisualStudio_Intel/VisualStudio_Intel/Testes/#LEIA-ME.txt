@@ -1,7 +1,7 @@
 1) Se for testar HexSimpShear ou HexUniax, antes de compilar:
-	Comentar "if" na rotina "AdditionalMaterialModelRoutine" em Source Files/FEM/Subroutines/ModFEMAnalysis.f90
+	Descomentar "if" na rotina "AdditionalMaterialModelRoutine" em Source Files/FEM/Subroutines/ModFEMAnalysis.f90
 
 2) Se for testar casos Multiescala, antes de compilar:
-	Descomentar "if" na rotina "AdditionalMaterialModelRoutine" em Source Files/FEM/Subroutines/ModFEMAnalysis.f90
+	Comentar "if" na rotina "AdditionalMaterialModelRoutine" em Source Files/FEM/Subroutines/ModFEMAnalysis.f90
 	Conferir número do nó de referência
 	Conferir parâmetros da hélice

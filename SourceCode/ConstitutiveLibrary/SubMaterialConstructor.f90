@@ -31,10 +31,11 @@ subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material,
 	type(ClassAnalysis)                                   :: AnalysisSettings
 	type(ClassNodes) , dimension(:) , pointer             :: GlobalNodesList
 	class(ClassConstitutiveModelWrapper)  , pointer       :: Material
+    type(ClassElementProfile)                             :: ElProfile
 
 	! Internal variables
 	! -----------------------------------------------------------------------------------
-	integer :: i, nNodes, nGP, gp
+	integer :: i, nNodes, nGP, gp, nGPe
 
 	!************************************************************************************
 
@@ -48,11 +49,11 @@ subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material,
     if ( ( nGP <= 0 ) .or. (nGP > 1000) ) then
         call Error ("Error: Number of the Gauss Points <=0 or >1000")
     endif
-
+    
     ! Allocate the constitutive model for all element's Gauss point
     ! -----------------------------------------------------------------------------------
 	call AllocateConstitutiveModel( Material%ModelEnumerator , AnalysisSettings , nGP ,  Element%GaussPoints )
-
+        
     ! Copy material properties from reference material (read in the settings file) to
     ! Gauss points
     ! -----------------------------------------------------------------------------------
@@ -73,10 +74,39 @@ subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material,
         call Element%GaussPoints(gp)%ConstitutiveModelConstructor(AnalysisSettings)
 
     enddo
-
-
+    
 	!************************************************************************************
 
+    !************************************************************************************
+	! CONSTRUCT OF MATERIALS - EXTRA GAUSS POINTS
+	!************************************************************************************
 
+    !Call profile to check if element has reinforcement capabilities
+    call Element%GetProfile(ElProfile)
+    
+    if (ElProfile%AcceptFiberReinforcement == .true.) then
+        
+        call Element%AllocateExtraGaussPoints(nGPe)
+        
+        ! Allocate the constitutive model for extra Gauss point
+        ! -----------------------------------------------------------------------------------
+        call AllocateConstitutiveModel( Material%ModelEnumerator , AnalysisSettings , nGPe ,  Element%ExtraGaussPoints )
+        
+        ! Copy material properties from reference material (read in the settings file) to extra Gauss points
+        ! --------------------------------------------------------------------------------------------------
+        do gp = 1,nGPe
+            call Element%ExtraGaussPoints(gp)%CopyProperties(Material%Mat(1))
+        enddo
+        
+        ! Construct the Constitutive Model
+        ! -----------------------------------------------------------------------------------
+        do gp=1,nGPe
+            allocate( Element%ExtraGaussPoints(gp)%Stress( AnalysisSettings%StressSize ) )
+            Element%ExtraGaussPoints(gp)%Stress = 0.0d0
+            call Element%ExtraGaussPoints(gp)%ConstitutiveModelDestructor()
+            call Element%ExtraGaussPoints(gp)%ConstitutiveModelConstructor(AnalysisSettings)
+        enddo
+    
+    endif
 
 end subroutine

@@ -41,6 +41,9 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
     integer , pointer , dimension(:)   :: GM
     real(8) , pointer , dimension(:,:) :: NaturalCoord
     real(8) , pointer , dimension(:)   :: Weight
+    real(8) , pointer , dimension(:,:) :: ExtraNaturalCoord
+    real(8) , pointer , dimension(:)   :: ExtraWeight
+    type(ClassElementProfile)          :: ElProfile
 
     !************************************************************************************
 
@@ -56,7 +59,7 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
         GM => GM_Memory( 1:nDOFel )
 
         call ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
-
+        
         call ElementList(e)%El%GetGlobalMapping(AnalysisSettings,GM)
 
         call ElementList(e)%El%ElementVolume(AnalysisSettings,Volume,VolumeX, Status)
@@ -87,11 +90,40 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
             call ElementList(e)%El%GaussPoints(gp)%UpdateStressAndStateVariables(Status)
 
         enddo
+        
+    !************************************************************************************
+    ! SOLVING THE GLOBAL CONSTITUTIVE MODEL - EXTRA GAUSS POINTS
+    !************************************************************************************
+        
+        !Call profile to check if element has reinforcement capabilities
+        call ElementList(e)%El%GetProfile(ElProfile)
+    
+        if (ElProfile%AcceptFiberReinforcement == .true.) then
+        
+            call ElementList(e)%El%GetExtraGaussPoints(ExtraNaturalCoord,ExtraWeight)
+        
+            ! Loop over Extra Gauss Points - add if reinf==true
+            do gp = 1 , size(ElementList(e)%El%ExtraGaussPoints)
+
+                call ElementList(e)%El%DeformationGradient( ExtraNaturalCoord(gp,:) , U(GM) , &
+                                                            AnalysisSettings , F, Status )
+
+                ElementList(e)%El%ExtraGaussPoints(gp)%F = F
+
+                ! AdditionalVariables
+                !----------------------------------------------------------------------------
+                ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%Jbar = Volume/VolumeX
+                !----------------------------------------------------------------------------
+
+                ElementList(e)%El%ExtraGaussPoints(gp)%Time = Time
+
+                call ElementList(e)%El%ExtraGaussPoints(gp)%UpdateStressAndStateVariables(Status)
+
+            enddo
+        
+        endif
 
     enddo
-
-
-
 
 end subroutine
 

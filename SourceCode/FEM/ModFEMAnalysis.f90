@@ -2385,54 +2385,57 @@ module FEMAnalysis
             ! -----------------------------------------------------------------------------------
             real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX
             real(8) :: mX(3), NodalValuesX(50)
-            integer :: ElemRef, NodeRef, e, gp, gpf, n, NumberOfNodes
+            integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes
 
 
             real(8) , pointer , dimension(:,:) :: NaturalCoord
-            real(8) , pointer , dimension(:,:) :: NaturalCoordMatrix
-            real(8) , pointer , dimension(:,:) :: NaturalCoordFiber
+            real(8) , pointer , dimension(:,:) :: NaturalCoordFibers
             real(8) , pointer , dimension(:)   :: Weight
+            real(8) , pointer , dimension(:)   :: WeightFibers
+            type(ClassElementProfile)          :: ElProfile
 
  		    !************************************************************************************
             ! ADDITIONAL COMPUTATIONS ON GAUSS POINTS
 		    !************************************************************************************
 ! TODO (Thiago#1#): Passar os enumeradores dos modelos para realizar as contas somente nos elementos que possuem o devido modelo material.
 
-            !Embedded fibers
-     
+            !####################################################################################
+            ! Cálculo das direções dos reforços de fibra
+            !####################################################################################
+            
             do e = 1 , size(this%ElementList)
                 
-                call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
+                !Call profile to check if element has reinforcement capabilities
+                call this%ElementList(e)%El%GetProfile(ElProfile)
+    
+                if (ElProfile%AcceptFiberReinforcement == .true.) then
                 
-                    NaturalCoordMatrix => NaturalCoord(1:8,:)
-                    NaturalCoordFiber => NaturalCoord(9:,:)
+                    call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
             
-                do gp = 1,size(NaturalCoordMatrix,dim=1)
+                    do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
+
+                        mX(1) = 0.0d0
+                        mX(2) = 0.0d0
+                        mX(3) = 0.0d0
             
-                    !Fibras Retas
-                    !----------------------
-                    mX(1) = 0.0d0
-                    mX(2) = 0.0d0
-                    mX(3) = 0.0d0
-                    !-----------------------
-            
-                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
                     
-                enddo
+                    enddo
+
+                    call this%ElementList(e)%El%GetExtraGaussPoints(NaturalCoordFibers,WeightFibers)
                 
-                do gpf = (size(NaturalCoordMatrix,dim=1)+1),size(NaturalCoord,dim=1)
+                    do gp = 1,size(NaturalCoordFibers,dim=1) !fibers Gauss points
+  
+                        mX(1) = 0.0d0
+                        mX(2) = 0.0d0
+                        mX(3) = 1.0d0
             
-                    !Fibras Retas
-                    !----------------------
-                    mX(1) = 0.0d0
-                    mX(2) = 0.0d0
-                    mX(3) = 1.0d0
-                    !-----------------------
-            
-                    this%ElementList(e)%El%GaussPoints(gpf)%AdditionalVariables%mX = mX
+                        this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
                     
-                enddo
-                
+                    enddo
+                    
+                endif
+                                
             enddo
             
             !####################################################################################
