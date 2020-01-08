@@ -375,10 +375,6 @@ module Element
                 
                     ! Retrieving gauss points parameters for numerical integration - with fiber reinforcement
                     call this%GetGaussPoints(NaturalCoord,Weight)
-                
-                    !NaturalCoordMatrix => NaturalCoord(1:8,:)
-                    !NaturalCoordFiber => NaturalCoord(9:,:)
-                    !NaturalCoord => NaturalCoordMatrix
                     
                     do gp = 1, size(NaturalCoord,dim=1)
                         
@@ -417,10 +413,7 @@ module Element
                 
                     !Loop over fiber gauss points
                     do gp = 1, size(NaturalCoordFibers,dim=1)
-                    
-                        !write(*,27) this%GaussPoints(gp)%AdditionalVariables%mX(1), this%GaussPoints(gp)%AdditionalVariables%mX(2), this%GaussPoints(gp)%AdditionalVariables%mX(3)
-                        !27 format('mX = (',F3.1,',',F3.1,',',F3.1,')')
-                    
+
                         !Get tangent modulus
                         call this%ExtraGaussPoints(gp)%GetTangentModulus(D)
 
@@ -439,7 +432,7 @@ module Element
                         ! Computes S*G
                         call MatrixMatrixMultiply_Sym ( S, G, SG, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
 
-                        dV0f = 6.283d-8
+                        dV0f = (this%ExtraGaussPoints(gp)%AdditionalVariables%A0)*(this%ExtraGaussPoints(gp)%AdditionalVariables%L0)
                         dVf = det(this%ExtraGaussPoints(gp)%F)*dV0f
                         
                         ! Computes Ke = Kg + Km
@@ -631,7 +624,7 @@ module Element
                         return
                     endif
                     
-                    dV0f = 6.283d-8
+                    dV0f = (this%ExtraGaussPoints(gp)%AdditionalVariables%A0)*(this%ExtraGaussPoints(gp)%AdditionalVariables%L0)
                     dVf = det(this%ExtraGaussPoints(gp)%F)*dV0f
                    
                     !Element internal force vector

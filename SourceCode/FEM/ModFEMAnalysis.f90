@@ -2383,7 +2383,7 @@ module FEMAnalysis
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX
+            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0
             real(8) :: mX(3), NodalValuesX(50)
             integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes
 
@@ -2417,8 +2417,12 @@ module FEMAnalysis
                         mX(1) = 0.0d0
                         mX(2) = 0.0d0
                         mX(3) = 0.0d0
+                        A0 = 0.0d0
+                        L0 = 0.0d0
             
                         this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
                     
                     enddo
 
@@ -2429,8 +2433,12 @@ module FEMAnalysis
                         mX(1) = 0.0d0
                         mX(2) = 0.0d0
                         mX(3) = 1.0d0
+                        A0 = 3.1415d-6
+                        L0 = 2.0d-2
             
                         this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
+                        this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
+                        this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
                     
                     enddo
                     
