@@ -2434,7 +2434,7 @@ module FEMAnalysis
                         mX(2) = 0.0d0
                         mX(3) = 1.0d0
                         A0 = 3.1415d-6
-                        L0 = 2.0d-2
+                        L0 = 2.0d-3
             
                         this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
                         this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
