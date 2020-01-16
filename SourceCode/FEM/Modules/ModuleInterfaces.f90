@@ -288,7 +288,7 @@ module Interfaces
 
 
         !==============================================================================================
-        subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material, AnalysisSettings )
+        subroutine MaterialConstructor( Element, GlobalNodesList, Material, AnalysisSettings, e )
 
             !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -305,10 +305,10 @@ module Interfaces
             ! Input variables
             ! -----------------------------------------------------------------------------------
             class(ClassElement) , pointer                         :: Element
-            type (ClassElementsWrapper) , pointer , dimension(:)  :: ElementList
             type(ClassAnalysis)                                   :: AnalysisSettings
             type(ClassNodes) , dimension(:) , pointer             :: GlobalNodesList
-            class(ClassConstitutiveModelWrapper)  , pointer :: Material
+            class(ClassConstitutiveModelWrapper)  , pointer       :: Material
+            integer                                               :: e
 
         end subroutine
         !==============================================================================================

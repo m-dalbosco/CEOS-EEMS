@@ -180,9 +180,10 @@ module Element
             stop "Erro::GetExtraGaussPoints::Dummy"
          end subroutine
         !==========================================================================================
-        subroutine AllocateExtraGaussPoints(this,nGP)
+        subroutine AllocateExtraGaussPoints(this,e,nGP)
             implicit none
             class(ClassElement) :: this
+            integer , intent(in) :: e
             integer , intent(inout) :: nGP
             stop "Erro::AllocateExtraGaussPoints::Dummy"
         end subroutine

@@ -2385,7 +2385,10 @@ module FEMAnalysis
             ! -----------------------------------------------------------------------------------
             real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0
             real(8) :: mX(3), NodalValuesX(50)
-            integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes
+            integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes, i, j, nGP, El_ID
+            
+            real(8),dimension(9) :: FiberData
+            logical              :: file_exists
 
 
             real(8) , pointer , dimension(:,:) :: NaturalCoord
@@ -2403,48 +2406,93 @@ module FEMAnalysis
             ! Cálculo das direções dos reforços de fibra
             !####################################################################################
             
-            do e = 1 , size(this%ElementList)
+            inquire(file='Fiber_info.tab',exist=file_exists)
+            
+            if (.not.file_exists) then
+            
+                write(*,*) 'File Fiber_info.tab not found'
+                STOP
+            
+            else
+            
+                do e = 1 , size(this%ElementList)
                 
-                !Call profile to check if element has reinforcement capabilities
-                call this%ElementList(e)%El%GetProfile(ElProfile)
+                    !Call profile to check if element has reinforcement capabilities
+                    call this%ElementList(e)%El%GetProfile(ElProfile)
     
-                if (ElProfile%AcceptFiberReinforcement == .true.) then
+                    if (ElProfile%AcceptFiberReinforcement == .true.) then
                 
-                    call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
+                        call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
             
-                    do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
+                        do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
 
-                        mX(1) = 0.0d0
-                        mX(2) = 0.0d0
-                        mX(3) = 0.0d0
-                        A0 = 0.0d0
-                        L0 = 0.0d0
+                            mX(1) = 0.0d0
+                            mX(2) = 0.0d0
+                            mX(3) = 0.0d0
+                            A0 = 0.0d0
+                            L0 = 0.0d0
             
-                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
-                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
-                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
+                            this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
+                            this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
+                            this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
                     
-                    enddo
+                        enddo
 
-                    call this%ElementList(e)%El%GetExtraGaussPoints(NaturalCoordFibers,WeightFibers)
+                        call this%ElementList(e)%El%GetExtraGaussPoints(NaturalCoordFibers,WeightFibers)
                 
-                    do gp = 1,size(NaturalCoordFibers,dim=1) !fibers Gauss points
-  
-                        mX(1) = 0.0d0
-                        mX(2) = 0.0d0
-                        mX(3) = 1.0d0
-                        A0 = 3.1415d-6
-                        L0 = 2.0d-3
-            
-                        this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
-                        this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
-                        this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
+                        do gp = 1,size(NaturalCoordFibers,dim=1) !fibers Gauss points
+                            
+                            open(87,file='Fiber_info.tab',status='old')
+                
+                            do i=1,e                
+                                read(87,*)
+                                read(87,*)
+                                read(87,'(i)') El_ID
+                                read(87,*)
+                                read(87,'(i)') nGP
+                                read(87,*)
                     
-                    enddo
+                                if (i==e) then
+                                                
+                                    do j=1,nGP
+                                        if (j==gp) then
+                                            read(87,*) FiberData(:)
+                                             
+                                            mX(1) = FiberData(5)
+                                            mX(2) = FiberData(6)
+                                            mX(3) = FiberData(7)
+                                            L0 = FiberData(8)
+                                            A0 = FiberData(9)
+                                                        
+                                            this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
+                                            this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
+                                            this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
+                                            
+                                        elseif (nGP /= 0) then
+                                            read(87,*)
+                                        endif
+                                    enddo
+                        
+                                elseif (nGP /= 0) then
+                        
+                                do j=1,nGP
+                                    read(87,*)
+                                enddo
+
+                                endif
+                                    
+                            enddo
+                
+                            close(87)
                     
-                endif
+                        enddo
+                    
+                    endif
                                 
-            enddo
+                enddo
+                
+            endif
+            
             
             !####################################################################################
             ! Cálculo das tangentes da hélice

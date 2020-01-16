@@ -379,7 +379,7 @@ module ElementHexa8R
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine AllocateExtraGaussPointsParameters_Hexa8R(this,nGP)
+        subroutine AllocateExtraGaussPointsParameters_Hexa8R(this,e,nGP)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -391,6 +391,10 @@ module ElementHexa8R
             ! Object
             ! -----------------------------------------------------------------------------------
             class(ClassElementHexa8R) :: this
+            
+            ! Input variables
+            ! -----------------------------------------------------------------------------------
+            integer , intent(in) :: e
 
             ! Output variables
             ! -----------------------------------------------------------------------------------
@@ -398,32 +402,64 @@ module ElementHexa8R
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: x , id(2,3)
-            real(8),parameter::R1=1.0d0
-
+            real(8),dimension(9) :: FiberData
+            integer              :: i, j
+            logical              :: file_exists
+            integer              :: El_ID
+            
 		    !************************************************************************************
 
 		    !************************************************************************************
-            ! PARAMETERS OF GAUSS POINTS - Hexa8R
+            ! PARAMETERS OF EXTRA GAUSS POINTS - Hexa8R
 		    !************************************************************************************
 
-            !Number of Gauss Points
-            nGP=2
+            inquire(file='Fiber_info.tab',exist=file_exists)
+            
+            if (.not.file_exists) then
+            
+                write(*,*) 'File Fiber_info.tab not found'
+                STOP
+            
+            else
+            
+                open(87,file='Fiber_info.tab',status='old')
+                
+                do i=1,e                
+                    read(87,*)
+                    read(87,*)
+                    read(87,'(i)') El_ID
+                    read(87,*)
+                    read(87,'(i)') nGP
+                    read(87,*)
+                    
+                    if (i==e) then
+                        
+                        allocate( ExtraNaturalCoordHexa8R(nGP,3) , ExtraWeightHexa8R(nGP) )
+                        
+                        !write(*,*) El_ID
+                        !write(*,*) nGP
+                                                
+                        do j=1,nGP
+                            read(87,*) FiberData(:)
+                            ExtraNaturalCoordHexa8R(j,:) = FiberData(1:3)
+                            ExtraWeightHexa8R(j) = FiberData(4)
+                            !write(*,*) FiberData
+                        enddo
+                        
+                    elseif (nGP /= 0) then
+                        
+                        do j=1,nGP
+                            read(87,*)
+                        enddo
 
-            if (associated(ExtraNaturalCoordHexa8R)) return
-            allocate( ExtraNaturalCoordHexa8R(nGP,3) , ExtraWeightHexa8R(nGP) )
+                    endif
+                                    
+                enddo
+                
+                close(87)
 
-            x=1.0d0/dsqrt(3.0d0)
-
-            id(1,:)=[ 0.0d0 ,  0.0d0 ,  R1 ]
-            id(2,:)=[ 0.0d0 ,  0.0d0 , -R1 ]
-
-            ExtraNaturalCoordHexa8R=id*x
-
-            ExtraWeightHexa8R=1.0d0
-
-		    !************************************************************************************
-
+            endif
+             
             end subroutine
         !==========================================================================================
 

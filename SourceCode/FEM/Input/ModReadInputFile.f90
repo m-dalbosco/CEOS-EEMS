@@ -1017,7 +1017,7 @@ contains
                 call DataFile%RaiseError("Element's Material was not found")
             endif
 
-            call MaterialConstructor( ElementList(i)%El, ElementList, GlobalNodesList, Material, AnalysisSettings )
+            call MaterialConstructor( ElementList(i)%El, GlobalNodesList, Material, AnalysisSettings, i )
 
         enddo
 
@@ -1401,7 +1401,7 @@ contains
                 call DataFile%RaiseError("Element's Material was not found")
             endif
 
-            call MaterialConstructor( ElementList(i)%El, ElementList, GlobalNodesList, Material, AnalysisSettings )
+            call MaterialConstructor( ElementList(i)%El, GlobalNodesList, Material, AnalysisSettings, i )
 
         enddo
 

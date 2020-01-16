@@ -10,7 +10,7 @@
 ! Modifications:
 ! Date:         Author:
 !##################################################################################################
-subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material, AnalysisSettings )
+subroutine MaterialConstructor( Element, GlobalNodesList, Material, AnalysisSettings, e )
 
 	!************************************************************************************
 	! DECLARATIONS OF VARIABLES
@@ -27,7 +27,6 @@ subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material,
 	! Input variables
 	! -----------------------------------------------------------------------------------
 	class(ClassElement) , pointer                         :: Element
-    type (ClassElementsWrapper) , pointer , dimension(:)  :: ElementList
 	type(ClassAnalysis)                                   :: AnalysisSettings
 	type(ClassNodes) , dimension(:) , pointer             :: GlobalNodesList
 	class(ClassConstitutiveModelWrapper)  , pointer       :: Material
@@ -35,7 +34,7 @@ subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material,
 
 	! Internal variables
 	! -----------------------------------------------------------------------------------
-	integer :: i, nNodes, nGP, gp, nGPe
+	integer :: i, nNodes, nGP, gp, nGPe, e
 
 	!************************************************************************************
 
@@ -86,7 +85,7 @@ subroutine MaterialConstructor( Element, ElementList, GlobalNodesList, Material,
     
     if (ElProfile%AcceptFiberReinforcement == .true.) then
         
-        call Element%AllocateExtraGaussPoints(nGPe)
+        call Element%AllocateExtraGaussPoints(e,nGPe)
         
         ! Allocate the constitutive model for extra Gauss point
         ! -----------------------------------------------------------------------------------
