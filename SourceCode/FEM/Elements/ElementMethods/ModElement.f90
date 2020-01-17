@@ -67,8 +67,7 @@ module Element
             procedure :: GetProfile
             procedure :: AllocateGaussPoints
             procedure :: IntegrateLine
-            procedure :: GetExtraGaussPoints
-            procedure :: AllocateExtraGaussPoints
+            procedure :: GetNumberOfExtraGaussPoints
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -172,15 +171,7 @@ module Element
             call error("Erro::IntegrateLine::Dummy")
          end subroutine
          !==========================================================================================
-         subroutine GetExtraGaussPoints(this,NaturalCoord,Weight)
-            implicit none
-            class(ClassElement) :: this
-            real(8) , pointer, dimension(:,:)  :: NaturalCoord
-            real(8) , pointer, dimension(:)    :: Weight
-            stop "Erro::GetExtraGaussPoints::Dummy"
-         end subroutine
-        !==========================================================================================
-        subroutine AllocateExtraGaussPoints(this,e,nGP)
+        subroutine GetNumberOfExtraGaussPoints(this,e,nGP)
             implicit none
             class(ClassElement) :: this
             integer , intent(in) :: e
@@ -246,13 +237,11 @@ module Element
             integer							    :: NDOFel , gp, i1, i2, i3
             real(8)							    :: detJ, DpDJbar
             real(8) , pointer , dimension(:)    :: Weight
-            real(8) , pointer , dimension(:)    :: WeightFibers
             real(8) , pointer , dimension(:,:)  :: NaturalCoord
-            real(8) , pointer , dimension(:,:)  :: NaturalCoordFibers
             real(8) , pointer , dimension(:,:)  :: B , G , S , D, DB, SG, Bdiv
             real(8)                             :: FactorAxi
-            real(8)                             :: dV0f, dVf
             type(ClassElementProfile)           :: ElProfile
+            real(8)                             :: NaturalCoordFiber(3), WeightFiber, A0f, L0f, dV0f, dVf
 
 		    !************************************************************************************
 
@@ -379,8 +368,6 @@ module Element
                     
                     do gp = 1, size(NaturalCoord,dim=1)
                         
-                        !write(*,27) this%GaussPoints(gp)%AdditionalVariables%mX(1), this%GaussPoints(gp)%AdditionalVariables%mX(2), this%GaussPoints(gp)%AdditionalVariables%mX(3)
-                        !27 format('mX = (',F3.1,',',F3.1,',',F3.1,')')
 
                         !Get tangent modulus
                         call this%GaussPoints(gp)%GetTangentModulus(D)
@@ -410,16 +397,18 @@ module Element
 
                     enddo
                     
-                    call this%GetExtraGaussPoints(NaturalCoordFibers,WeightFibers)
-                
                     !Loop over fiber gauss points
-                    do gp = 1, size(NaturalCoordFibers,dim=1)
+                    do gp = 1, size(this%ExtraGaussPoints)
+
+                        !Get natural coordinates and weight
+                        NaturalCoordFiber = this%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord
+                        WeightFiber = this%ExtraGaussPoints(gp)%AdditionalVariables%Weight
 
                         !Get tangent modulus
                         call this%ExtraGaussPoints(gp)%GetTangentModulus(D)
 
                         !Get matrix B, G and the Jacobian determinant
-                        call this%Matrix_B_and_G(AnalysisSettings, NaturalCoordFibers(gp,:) , B, G , detJ , FactorAxi )
+                        call this%Matrix_B_and_G(AnalysisSettings, NaturalCoordFiber, B, G , detJ , FactorAxi )
 
                         !Get Matrix of Stresses
                         call this%ExtraGaussPoints(gp)%GetMatrixOfStresses(AnalysisSettings,S)
@@ -427,21 +416,25 @@ module Element
                         !Element stiffness matrix
                         !---------------------------------------------------------------------------------------------------
 
+                        !Get initial area and lenght
+                        A0f = this%ExtraGaussPoints(gp)%AdditionalVariables%A0
+                        L0f = this%ExtraGaussPoints(gp)%AdditionalVariables%L0
+
                         ! Computes D*B
                         call MatrixMatrixMultiply_Sym ( D, B, DB, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
 
                         ! Computes S*G
                         call MatrixMatrixMultiply_Sym ( S, G, SG, 1.0d0, 0.0d0 ) ! C := alpha*A*B + beta*C - A=Sym and upper triangular
 
-                        dV0f = (this%ExtraGaussPoints(gp)%AdditionalVariables%A0)*(this%ExtraGaussPoints(gp)%AdditionalVariables%L0)
+                        dV0f = A0f*L0f
                         dVf = det(this%ExtraGaussPoints(gp)%F)*dV0f
                         
                         ! Computes Ke = Kg + Km
                         !Matrix Km
-                        call MatrixMatrixMultiply_Trans ( B, DB, Ke, 0.5d0*dVf*WeightFibers(gp), 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+                        call MatrixMatrixMultiply_Trans ( B, DB, Ke, 0.5d0*dVf*WeightFiber, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
 
                         !Matrix Kg
-                        call MatrixMatrixMultiply_Trans ( G, SG, Ke, 0.5d0*dVf*WeightFibers(gp), 1.0d0 ) !C := alpha*(A^T)*B + beta*C
+                        call MatrixMatrixMultiply_Trans ( G, SG, Ke, 0.5d0*dVf*WeightFiber, 1.0d0 ) !C := alpha*(A^T)*B + beta*C
 
                     enddo
 
@@ -529,13 +522,13 @@ module Element
             ! -----------------------------------------------------------------------------------
             integer							    :: NDOFel , gp
             real(8)							    :: detJ
-            real(8) , pointer , dimension(:)    :: Weight , Cauchy , WeightFibers, CauchyFiber
+            real(8) , pointer , dimension(:)    :: Cauchy, Weight
             real(8) , pointer , dimension(:,:)  :: NaturalCoord
-            real(8) , pointer , dimension(:,:)  :: NaturalCoordFibers
             real(8) , pointer , dimension(:,:)  :: B , G
             real(8)                             :: FactorAxi
-            real(8)                             :: dV0f, dVf
             type(ClassElementProfile)           :: ElProfile
+            real(8) , pointer , dimension(:)    :: CauchyFiber
+            real(8)                             :: NaturalCoordFiber(3), WeightFiber, A0f, L0f, dV0f, dVf
 		    !************************************************************************************
 
 		    !************************************************************************************
@@ -609,27 +602,33 @@ module Element
 
                 enddo
                 
-                call this%GetExtraGaussPoints(NaturalCoordFibers,WeightFibers)
-                
                 !Loop over fiber gauss points
-                do gp = 1, size(NaturalCoordFibers,dim=1)
+                do gp = 1, size(this%ExtraGaussPoints)
                     
                     !Get Cauchy Stress
                     CauchyFiber => this%ExtraGaussPoints(gp)%Stress
                     
+                    !Get natural coordinates and weight
+                    NaturalCoordFiber = this%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord
+                    WeightFiber = this%ExtraGaussPoints(gp)%AdditionalVariables%Weight
+                    
+                    !Get initial area and lenght
+                    A0f = this%ExtraGaussPoints(gp)%AdditionalVariables%A0
+                    L0f = this%ExtraGaussPoints(gp)%AdditionalVariables%L0
+                    
                     !Get matrix B and the Jacobian determinant
-                    call this%Matrix_B_and_G(AnalysisSettings, NaturalCoordFibers(gp,:) , B, G, detJ , FactorAxi)
+                    call this%Matrix_B_and_G(AnalysisSettings, NaturalCoordFiber , B, G, detJ , FactorAxi)
 
                     if (detJ <= 1.0d-13) then
                         call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
                         return
                     endif
                     
-                    dV0f = (this%ExtraGaussPoints(gp)%AdditionalVariables%A0)*(this%ExtraGaussPoints(gp)%AdditionalVariables%L0)
+                    dV0f = A0f*L0f
                     dVf = det(this%ExtraGaussPoints(gp)%F)*dV0f
                    
                     !Element internal force vector
-                    call MatrixVectorMultiply ( 'T', B, CauchyFiber( 1:size(B,1) ), Fe, 0.5d0*dVf*WeightFibers(gp), 1.0d0 ) !y := alpha*op(A)*x + beta*y
+                    call MatrixVectorMultiply ( 'T', B, CauchyFiber( 1:size(B,1) ), Fe, 0.5d0*dVf*WeightFiber, 1.0d0 ) !y := alpha*op(A)*x + beta*y
 
                 enddo
                 

@@ -41,9 +41,8 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
     integer , pointer , dimension(:)   :: GM
     real(8) , pointer , dimension(:,:) :: NaturalCoord
     real(8) , pointer , dimension(:)   :: Weight
-    real(8) , pointer , dimension(:,:) :: ExtraNaturalCoord
-    real(8) , pointer , dimension(:)   :: ExtraWeight
     type(ClassElementProfile)          :: ElProfile
+    real(8)                            :: ExtraNaturalCoord(3)
 
     !************************************************************************************
 
@@ -78,12 +77,10 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
 
             ElementList(e)%El%GaussPoints(gp)%F = F
 
-
             ! AdditionalVariables
             !----------------------------------------------------------------------------
             ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%Jbar = Volume/VolumeX
             !----------------------------------------------------------------------------
-
 
             ElementList(e)%El%GaussPoints(gp)%Time = Time
 
@@ -100,13 +97,11 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
     
         if (ElProfile%AcceptFiberReinforcement == .true.) then
         
-            call ElementList(e)%El%GetExtraGaussPoints(ExtraNaturalCoord,ExtraWeight)
-        
-            ! Loop over Extra Gauss Points - add if reinf==true
             do gp = 1 , size(ElementList(e)%El%ExtraGaussPoints)
+                
+                ExtraNaturalCoord = ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord
 
-                call ElementList(e)%El%DeformationGradient( ExtraNaturalCoord(gp,:) , U(GM) , &
-                                                            AnalysisSettings , F, Status )
+                call ElementList(e)%El%DeformationGradient( ExtraNaturalCoord , U(GM) , AnalysisSettings , F, Status )
 
                 ElementList(e)%El%ExtraGaussPoints(gp)%F = F
 

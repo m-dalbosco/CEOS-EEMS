@@ -25,8 +25,6 @@ module ElementHexa8R
 	! -------------------------------------------------------------------------------------------
     real(8), pointer , dimension(:,:) :: NaturalCoordHexa8R      => null()
     real(8), pointer , dimension(:)   :: WeightHexa8R            => null()
-    real(8), pointer , dimension(:,:) :: ExtraNaturalCoordHexa8R => null()
-    real(8), pointer , dimension(:)   :: ExtraWeightHexa8R       => null()
 
     !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
@@ -41,14 +39,13 @@ module ElementHexa8R
         contains
             ! Class Methods
             !--------------------------------------------------------------------------------------
-            procedure :: GetProfile               => GetProfile_Hexa8R
-            procedure :: GetGaussPoints           => GetGaussPoints_Hexa8R
-            procedure :: GetNumberOfNodes         => GetNumberOfNodes_Hexa8R
-            procedure :: GetShapeFunctions        => GetShapeFunctions_Hexa8R
-            procedure :: GetDifShapeFunctions     => GetDifShapeFunctions_Hexa8R
-            procedure :: AllocateGaussPoints      => AllocateGaussPointsParameters_Hexa8R
-            procedure :: GetExtraGaussPoints      => GetExtraGaussPoints_Hexa8R
-            procedure :: AllocateExtraGaussPoints => AllocateExtraGaussPointsParameters_Hexa8R
+            procedure :: GetProfile                  => GetProfile_Hexa8R
+            procedure :: GetGaussPoints              => GetGaussPoints_Hexa8R
+            procedure :: GetNumberOfNodes            => GetNumberOfNodes_Hexa8R
+            procedure :: GetShapeFunctions           => GetShapeFunctions_Hexa8R
+            procedure :: GetDifShapeFunctions        => GetDifShapeFunctions_Hexa8R
+            procedure :: AllocateGaussPoints         => AllocateGaussPointsParameters_Hexa8R
+            procedure :: GetNumberOfExtraGaussPoints => GetNumberOfExtraGaussPointsParameters_Hexa8R
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -109,45 +106,6 @@ module ElementHexa8R
         end subroutine
         !==========================================================================================
         
-        !==========================================================================================
-        ! Method GetFiberGaussPoints_Hexa8R:  This method points to the natural coordinates and weights
-        ! used in the Gaussian Quadrature of the fibers.
-        !------------------------------------------------------------------------------------------
-        ! Modifications:
-        ! Date:         Author:
-        !==========================================================================================
-        subroutine GetExtraGaussPoints_Hexa8R(this, NaturalCoord, Weight)
-
-		    !************************************************************************************
-            ! DECLARATIONS OF VARIABLES
-		    !************************************************************************************
-            ! Modules and implicit declarations
-            ! -----------------------------------------------------------------------------------
-            implicit none
-
-            ! Object
-            ! -----------------------------------------------------------------------------------
-            class(ClassElementHexa8R) :: this
-
-            ! Input/Output variables
-            ! -----------------------------------------------------------------------------------
-            real(8) , pointer, dimension(:,:)  :: NaturalCoord
-            real(8) , pointer, dimension(:)    :: Weight
-
-		    !************************************************************************************
-
-		    !************************************************************************************
-            ! POINT TO Hexa8R FIBER METHODS
-		    !************************************************************************************
-
-            NaturalCoord => ExtraNaturalCoordHexa8R
-            Weight       => ExtraWeightHexa8R
-
-		    !************************************************************************************
-
-        end subroutine
-        !==========================================================================================
-
         !==========================================================================================
         ! Method GetNumberOfNodes_Hexa8R:  This method returns the number of nodes of the element
         !------------------------------------------------------------------------------------------
@@ -379,7 +337,7 @@ module ElementHexa8R
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine AllocateExtraGaussPointsParameters_Hexa8R(this,e,nGP)
+        subroutine GetNumberOfExtraGaussPointsParameters_Hexa8R(this,e,nGP)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -402,7 +360,6 @@ module ElementHexa8R
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8),dimension(9) :: FiberData
             integer              :: i, j
             logical              :: file_exists
             integer              :: El_ID
@@ -410,7 +367,7 @@ module ElementHexa8R
 		    !************************************************************************************
 
 		    !************************************************************************************
-            ! PARAMETERS OF EXTRA GAUSS POINTS - Hexa8R
+            ! READ NUMBER OF EXTRA GAUSS POINTS - Hexa8R
 		    !************************************************************************************
 
             inquire(file='Fiber_info.tab',exist=file_exists)
@@ -433,17 +390,9 @@ module ElementHexa8R
                     read(87,*)
                     
                     if (i==e) then
-                        
-                        allocate( ExtraNaturalCoordHexa8R(nGP,3) , ExtraWeightHexa8R(nGP) )
-                        
-                        !write(*,*) El_ID
-                        !write(*,*) nGP
-                                                
+
                         do j=1,nGP
-                            read(87,*) FiberData(:)
-                            ExtraNaturalCoordHexa8R(j,:) = FiberData(1:3)
-                            ExtraWeightHexa8R(j) = FiberData(4)
-                            !write(*,*) FiberData
+                            read(87,*)
                         enddo
                         
                     elseif (nGP /= 0) then

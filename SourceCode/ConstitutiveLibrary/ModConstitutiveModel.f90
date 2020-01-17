@@ -18,6 +18,8 @@ module ConstitutiveModel
 
         real(8) :: Jbar
         real(8) :: mX(3)
+        real(8) :: NaturalCoord(3)
+        real(8) :: Weight
         real(8) :: A0
         real(8) :: L0
 

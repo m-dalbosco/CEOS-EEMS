@@ -2383,8 +2383,8 @@ module FEMAnalysis
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0
-            real(8) :: mX(3), NodalValuesX(50)
+            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0, w
+            real(8) :: mX(3), IP(3), NodalValuesX(50)
             integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes, i, j, nGP, El_ID
             
             real(8),dimension(9) :: FiberData
@@ -2392,9 +2392,7 @@ module FEMAnalysis
 
 
             real(8) , pointer , dimension(:,:) :: NaturalCoord
-            real(8) , pointer , dimension(:,:) :: NaturalCoordFibers
             real(8) , pointer , dimension(:)   :: Weight
-            real(8) , pointer , dimension(:)   :: WeightFibers
             type(ClassElementProfile)          :: ElProfile
 
  		    !************************************************************************************
@@ -2437,10 +2435,8 @@ module FEMAnalysis
                             this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
                     
                         enddo
-
-                        call this%ElementList(e)%El%GetExtraGaussPoints(NaturalCoordFibers,WeightFibers)
                 
-                        do gp = 1,size(NaturalCoordFibers,dim=1) !fibers Gauss points
+                        do gp = 1,size(this%ElementList(e)%El%ExtraGaussPoints) !fibers Gauss points
                             
                             open(87,file='Fiber_info.tab',status='old')
                 
@@ -2457,13 +2453,20 @@ module FEMAnalysis
                                     do j=1,nGP
                                         if (j==gp) then
                                             read(87,*) FiberData(:)
-                                             
+                                            
+                                            IP(1) = FiberData(1)
+                                            IP(2) = FiberData(2)
+                                            IP(3) = FiberData(3)
+                                            w = FiberData(4)
                                             mX(1) = FiberData(5)
                                             mX(2) = FiberData(6)
                                             mX(3) = FiberData(7)
                                             L0 = FiberData(8)
                                             A0 = FiberData(9)
-                                                        
+                                            
+                                            this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord = IP
+                                            this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight = w
+
                                             this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
                                             this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
                                             this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0

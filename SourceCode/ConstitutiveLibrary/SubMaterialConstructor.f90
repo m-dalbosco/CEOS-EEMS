@@ -85,7 +85,7 @@ subroutine MaterialConstructor( Element, GlobalNodesList, Material, AnalysisSett
     
     if (ElProfile%AcceptFiberReinforcement == .true.) then
         
-        call Element%AllocateExtraGaussPoints(e,nGPe)
+        call Element%GetNumberOfExtraGaussPoints(e,nGPe)
         
         ! Allocate the constitutive model for extra Gauss point
         ! -----------------------------------------------------------------------------------
