@@ -370,16 +370,16 @@ module ElementHexa8R
             ! READ NUMBER OF EXTRA GAUSS POINTS - Hexa8R
 		    !************************************************************************************
 
-            inquire(file='Fiber_info.tab',exist=file_exists)
+            inquire(file='Fiber_info.dat',exist=file_exists)
             
             if (.not.file_exists) then
             
-                write(*,*) 'File Fiber_info.tab not found'
+                write(*,*) 'File Fiber_info.dat not found'
                 STOP
             
             else
             
-                open(87,file='Fiber_info.tab',status='old')
+                open(87,file='Fiber_info.dat',status='old')
                 
                 do i=1,e                
                     read(87,*)
