@@ -10,7 +10,7 @@
 ! Modifications:
 ! Date:         Author:
 !##################################################################################################
-module NeoHookeanFiberReinf
+module NeoHookeanFiberExp
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	! DECLARATIONS OF VARIABLES
@@ -26,11 +26,11 @@ module NeoHookeanFiberReinf
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     ! "NameOfTheMaterialModel"Properties: Material Properties
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    type NeoHookeanFiberReinfProperties
+    type NeoHookeanFiberExpProperties
 
         ! Variables of material parameters
         !----------------------------------------------------------------------------------------------
-        real(8) :: Gm, Km, Gc
+        real(8) :: Gm, Km, k1, k2
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -39,7 +39,7 @@ module NeoHookeanFiberReinf
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     ! Class"NameOfTheMaterialModel": Attributes and methods of the constitutive model
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    type , extends(ClassConstitutiveModel) :: ClassNeoHookeanFiberReinf
+    type , extends(ClassConstitutiveModel) :: ClassNeoHookeanFiberExp
 
         !Obs.: The ClassConstitutiveModel already has the variables:
         ! - stress (Voigt notation)
@@ -53,19 +53,19 @@ module NeoHookeanFiberReinf
 
 		! Class Attributes : Material Properties
 		!----------------------------------------------------------------------------------------
-        type (NeoHookeanFiberReinfProperties), pointer :: Properties => null()
+        type (NeoHookeanFiberExpProperties), pointer :: Properties => null()
 
 
         contains
 
             ! Class Methods
             !----------------------------------------------------------------------------------
-             procedure :: ConstitutiveModelConstructor => ConstitutiveModelConstructor_NeoHookeanFiberReinf
-             procedure :: ConstitutiveModelDestructor  => ConstitutiveModelDestructor_NeoHookeanFiberReinf
-             procedure :: ReadMaterialParameters       => ReadMaterialParameters_NeoHookeanFiberReinf
-             procedure :: GetResult                    => GetResult_NeoHookeanFiberReinf
-             procedure :: SwitchConvergedState         => SwitchConvergedState_NeoHookeanFiberReinf
-             procedure :: CopyProperties               => CopyProperties_NeoHookeanFiberReinf
+             procedure :: ConstitutiveModelConstructor => ConstitutiveModelConstructor_NeoHookeanFiberExp
+             procedure :: ConstitutiveModelDestructor  => ConstitutiveModelDestructor_NeoHookeanFiberExp
+             procedure :: ReadMaterialParameters       => ReadMaterialParameters_NeoHookeanFiberExp
+             procedure :: GetResult                    => GetResult_NeoHookeanFiberExp
+             procedure :: SwitchConvergedState         => SwitchConvergedState_NeoHookeanFiberExp
+             procedure :: CopyProperties               => CopyProperties_NeoHookeanFiberExp
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -74,13 +74,13 @@ module NeoHookeanFiberReinf
     ! Class"NameOfTheMaterialModel"_3D: Attributes and methods of the constitutive model
     ! in Three-Dimensional analysis.
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    type , extends(ClassNeoHookeanFiberReinf) :: ClassNeoHookeanFiberReinf_3D
+    type , extends(ClassNeoHookeanFiberExp) :: ClassNeoHookeanFiberExp_3D
 
          contains
             ! Class Methods
             !----------------------------------------------------------------------------------
-             procedure :: UpdateStressAndStateVariables  =>  UpdateStressAndStateVariables_NeoHookeanFiberReinf_3D
-             procedure :: GetTangentModulus              =>  GetTangentModulus_NeoHookeanFiberReinf_3D
+             procedure :: UpdateStressAndStateVariables  =>  UpdateStressAndStateVariables_NeoHookeanFiberExp_3D
+             procedure :: GetTangentModulus              =>  GetTangentModulus_NeoHookeanFiberExp_3D
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -94,7 +94,7 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine ConstitutiveModelConstructor_NeoHookeanFiberReinf(this,AnalysisSettings)
+        subroutine ConstitutiveModelConstructor_NeoHookeanFiberExp(this,AnalysisSettings)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -105,7 +105,7 @@ module NeoHookeanFiberReinf
 
             ! Object
             ! -----------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
+            class(ClassNeoHookeanFiberExp) :: this
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine ConstitutiveModelDestructor_NeoHookeanFiberReinf(this)
+        subroutine ConstitutiveModelDestructor_NeoHookeanFiberExp(this)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -140,7 +140,7 @@ module NeoHookeanFiberReinf
 
             ! Object
             ! -----------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
+            class(ClassNeoHookeanFiberExp) :: this
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine ReadMaterialParameters_NeoHookeanFiberReinf(this,DataFile)
+        subroutine ReadMaterialParameters_NeoHookeanFiberExp(this,DataFile)
 
 
 		    !************************************************************************************
@@ -177,7 +177,7 @@ module NeoHookeanFiberReinf
 
             ! Object
             ! ---------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
+            class(ClassNeoHookeanFiberExp) :: this
 
             ! Input variables
             ! ---------------------------------------------------------------------------------
@@ -185,7 +185,7 @@ module NeoHookeanFiberReinf
 
             ! Internal variables
             ! ---------------------------------------------------------------------------------
-		    character(len=100), dimension(3) :: ListOfOptions, ListOfValues
+		    character(len=100), dimension(4) :: ListOfOptions, ListOfValues
 		    logical, dimension(2)            :: FoundOption
 		    integer                          :: i
 		    !************************************************************************************
@@ -201,7 +201,7 @@ module NeoHookeanFiberReinf
 
             ! Inform how the properties are shown in the "Settings" file.
             !------------------------------------------------------------------------------------
-            ListOfOptions=["Gm","Km","Gc"]
+            ListOfOptions=["Gm","Km","k1","k2"]
             !------------------------------------------------------------------------------------
 
 		    !___________________   WARNIG! DO NOT CHANGE OR ERASE THIS BLOCK    _________________
@@ -213,7 +213,8 @@ module NeoHookeanFiberReinf
             !------------------------------------------------------------------------------------
             this%Properties%Gm = ListOfValues(1)
             this%Properties%Km = ListOfValues(2)
-            this%Properties%Gc = ListOfValues(3)
+            this%Properties%k1 = ListOfValues(3)
+            this%Properties%k2 = ListOfValues(4)
             !------------------------------------------------------------------------------------
 
 
@@ -229,14 +230,14 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine CopyProperties_NeoHookeanFiberReinf(this,Reference)
+        subroutine CopyProperties_NeoHookeanFiberExp(this,Reference)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
 		    !************************************************************************************
             ! Object
             ! ---------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
+            class(ClassNeoHookeanFiberExp) :: this
 
             ! Input variables
             ! ---------------------------------------------------------------------------------
@@ -248,10 +249,10 @@ module NeoHookeanFiberReinf
             !-----------------------------------------------------------------------------------
              select type ( Reference )
 
-                 class is ( ClassNeoHookeanFiberReinf )
+                 class is ( ClassNeoHookeanFiberExp )
                     this%Properties => Reference%Properties
                  class default
-                     stop "Error: Subroutine CopyProperties Neo-Hookean FiberReinf"
+                     stop "Error: Subroutine CopyProperties Neo-Hookean FiberExp"
             end select
             !-----------------------------------------------------------------------------------
 
@@ -267,7 +268,7 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine UpdateStressAndStateVariables_NeoHookeanFiberReinf_3D(this,Status)
+        subroutine UpdateStressAndStateVariables_NeoHookeanFiberExp_3D(this,Status)
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -278,14 +279,14 @@ module NeoHookeanFiberReinf
 
             ! Object
             ! ---------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf_3D) :: this
+            class(ClassNeoHookeanFiberExp_3D) :: this
             type(ClassStatus) :: Status
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             real(8) :: F(3,3), C(3,3), Cinv(3,3),Ciso(3,3), I(3,3), S(3,3), Sfric(3,3), devSfric(3,3)
             real(8) :: mX(3), A(3,3)
-            real(8) :: J, p, Km, Gm, Gc, I4
+            real(8) :: J, p, Km, Gm, k1, k2, I4
 
 		    !************************************************************************************
 
@@ -305,7 +306,8 @@ module NeoHookeanFiberReinf
             ! -----------------------------------------------------------------------------------
             Km = this%Properties%Km
             Gm = this%Properties%Gm
-            Gc = this%Properties%Gc
+            k1 = this%Properties%k1
+            k2 = this%Properties%k2
             F  = this%F
             mX = this%AdditionalVariables%mX
             
@@ -335,10 +337,10 @@ module NeoHookeanFiberReinf
 
             !Fourth Invariant
             I4 = Tensor_Inner_Product(C,A)
-            
+
             ! -----------------------------------------------------------------------------------
 
-            if (norm(mX)==0) then
+            if (norm(mX)==0) then !calculate matrix contribution
 
                 ! Modified Second Piola-Kirchhoff Matrix Stress - Calculated in 3D Tensorial Format
                 ! -----------------------------------------------------------------------------------
@@ -366,13 +368,22 @@ module NeoHookeanFiberReinf
                 this%Stress = Convert_to_Voigt_3D_Sym( S )
                 ! -----------------------------------------------------------------------------------
                 
-            else
+            else !calculate fiber contribution
                 
-                !Fiber Second Piola stress
-                S = Gc*(1-(I4**(-3.0d0/2.0d0)))*A
+                if (I4 .gt. 1.0d0) then
                 
-                S = matmul(matmul(F,S),transpose(F))/J
-                this%Stress = Convert_to_Voigt_3D_Sym( S )
+                    !Fiber Second Piola stress
+                    S = 2.0d0*k1*(I4-1.0d0)*exp((k2*(I4-1.0d0)**2.0d0)-1)*A
+                
+                    S = matmul(matmul(F,S),transpose(F))/J
+                    this%Stress = Convert_to_Voigt_3D_Sym( S )
+                
+                else
+                    
+                    S = 0
+                    this%Stress = Convert_to_Voigt_3D_Sym( S )
+                
+                endif
                 
             endif
             
@@ -389,7 +400,7 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine GetTangentModulus_NeoHookeanFiberReinf_3D(this,D)
+        subroutine GetTangentModulus_NeoHookeanFiberExp_3D(this,D)
 
 
 		    !************************************************************************************
@@ -401,7 +412,7 @@ module NeoHookeanFiberReinf
 
             ! Object
             ! -----------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf_3D) :: this
+            class(ClassNeoHookeanFiberExp_3D) :: this
 
             ! Output variables
             ! -----------------------------------------------------------------------------------
@@ -409,7 +420,7 @@ module NeoHookeanFiberReinf
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: J, p, Km, Gm, Gc, d2PSIvol_dJ2, I4
+            real(8) :: J, p, Km, Gm, k1, k2, d2PSIvol_dJ2, I4
             real(8) :: F(3,3), C(3,3),Cinv(3,3), Ciso(3,3), Sfric(3,3), I(3,3)
             
             real(8) :: mX(3), A(3,3), Avoigt(6)
@@ -429,7 +440,8 @@ module NeoHookeanFiberReinf
             ! -----------------------------------------------------------------------------------
             Km = this%Properties%Km
             Gm = this%Properties%Gm
-            Gc = this%Properties%Gc
+            k1 = this%Properties%k1
+            k2 = this%Properties%k2
             F  = this%F
             mX = this%AdditionalVariables%mX
             ! -----------------------------------------------------------------------------------
@@ -469,7 +481,7 @@ module NeoHookeanFiberReinf
             !Fourth Invariant
             I4 = Tensor_Inner_Product(C,A)
             
-            if (norm(mX)==0) then
+            if (norm(mX)==0) then !calculate matrix contribution
             
                 ! Matrix tangent modulus
                 ! -----------------------------------------------------------------------------------
@@ -529,10 +541,18 @@ module NeoHookeanFiberReinf
 
                 ! -----------------------------------------------------------------------------------
                 
-            else
+            else !calculate fiber contribution
                 
-                ! Fiber material tangent modulus
-                Daux = (3.0d0*Gc*(I4**(-5.0d0/2.0d0)))*Ball_Voigt(Avoigt,Avoigt)
+                if (I4 .gt. 1.0d0) then
+                
+                    ! Fiber material tangent modulus
+                    Daux = 4*k1*(1.0d0+(2.0d0*k2*((I4-1.0d0)**2.0d0)))*exp((k2*(I4-1.0d0)**2.0d0)-1)*Ball_Voigt(Avoigt,Avoigt)
+                
+                else
+                    
+                    Daux = 0
+                    
+                endif
                 
             endif
 
@@ -555,8 +575,8 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine SwitchConvergedState_NeoHookeanFiberReinf(this)
-            class(ClassNeoHookeanFiberReinf) :: this
+        subroutine SwitchConvergedState_NeoHookeanFiberExp(this)
+            class(ClassNeoHookeanFiberExp) :: this
         end subroutine
         !==========================================================================================
 
@@ -568,7 +588,7 @@ module NeoHookeanFiberReinf
         ! Modifications:
         ! Date:         Author:
         !==========================================================================================
-        subroutine GetResult_NeoHookeanFiberReinf(this, ID , Name , Length , Variable , VariableType  )
+        subroutine GetResult_NeoHookeanFiberExp(this, ID , Name , Length , Variable , VariableType  )
 
 		    !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -579,7 +599,7 @@ module NeoHookeanFiberReinf
 
             ! Object
             ! -----------------------------------------------------------------------------------
-            class(ClassNeoHookeanFiberReinf) :: this
+            class(ClassNeoHookeanFiberExp) :: this
 
             ! Input variables
             ! -----------------------------------------------------------------------------------

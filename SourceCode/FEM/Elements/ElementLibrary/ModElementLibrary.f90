@@ -24,6 +24,7 @@ module ElementLibrary
     use ElementHexa8
     use ElementTetra10
     use ElementHexa8R
+    use ElementTetra10R
 
     ! Elements ID used in the code: [Geometry][InterpolationDegree][ElementTechnology]
     !
@@ -36,7 +37,7 @@ module ElementLibrary
         integer :: Quad4  = 210	, Quad9   = 220
         integer :: Tetra4 = 310 , Tetra10 = 320
         integer :: Hexa8  = 410 , Hexa27  = 420
-        integer :: Hexa8R = 411
+        integer :: Hexa8R = 411, Tetra10R = 321
     end type
 
     type(ClassElementTypes),parameter :: ElementTypes = ClassElementTypes()
@@ -78,6 +79,7 @@ module ElementLibrary
             type(ClassElementHexa8)   , pointer :: ElHexa8    => null()
             type(ClassElementTetra10) , pointer :: ElTetra10  => null()
             type(ClassElementHexa8R)   , pointer :: ElHexa8R    => null()
+            type(ClassElementTetra10R)   , pointer :: ElTetra10R    => null()
 
 		    !************************************************************************************
 
@@ -116,6 +118,11 @@ module ElementLibrary
 
                     allocate(ElHexa8R)
                     Element=>ElHexa8R
+                    
+                 case (ElementTypes % Tetra10R)
+
+                    allocate(ElTetra10R)
+                    Element=>ElTetra10R
 
             case default
                 call Error("AllocateNewElement :: Element not identified")
@@ -265,8 +272,9 @@ LOOP:      do el = 1 , size(AvailableElements)
         type(ClassElementHexa8)   :: ElHexa8
         type(ClassElementTetra10) :: ElTetra10
         type(ClassElementHexa8R)  :: ElHexa8R
+        type(ClassElementTetra10R) :: ElTetra10R
 
-        NumberOfAvailableElements = 6
+        NumberOfAvailableElements = 7
 
         if (allocated(AvailableElements)) deallocate(AvailableElements)
         allocate( AvailableElements(NumberOfAvailableElements))
@@ -277,6 +285,7 @@ LOOP:      do el = 1 , size(AvailableElements)
         call ElHexa8 %GetProfile(AvailableElements(4)) ; AvailableElements(4)%ElementType = ElementTypes % Hexa8
         call ElTetra10%GetProfile(AvailableElements(5)) ; AvailableElements(5)%ElementType = ElementTypes % Tetra10
         call ElHexa8R %GetProfile(AvailableElements(6)) ; AvailableElements(6)%ElementType = ElementTypes % Hexa8R
+        call ElTetra10R%GetProfile(AvailableElements(7)) ; AvailableElements(7)%ElementType = ElementTypes % Tetra10R
 
     end subroutine
 

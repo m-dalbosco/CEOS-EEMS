@@ -716,6 +716,7 @@ module NeoHookeanIsochoric
             ! Hydrostatic Pressure
             !p = BulkModulus*( 1.0d0 - (1.0d0/J) )
             p = BulkModulus*( J - 1.0d0  )
+            !p = (BulkModulus/2)*( J - (1.0d0/J) )
 
             ! Deviatoric part of the Second Piola-Kirchhoff Frictional
             devSfric = Sfric - (1.0d0/3.0d0)*Tensor_Inner_Product(Sfric,C)*Cinv
@@ -814,10 +815,12 @@ module NeoHookeanIsochoric
             ! Hydrostatic Pressure
             !p = BulkModulus*( 1.0d0 - (1.0d0/J) )
             p = BulkModulus*( J - 1.0d0  )
+            !p = (BulkModulus/2)*( J - (1.0d0/J) )
 
             ! Derivative of Hydrostatic Pressure
             !d2PSIvol_dJ2 = BulkModulus/(J**2.0d0)
             d2PSIvol_dJ2 = BulkModulus
+            !d2PSIvol_dJ2 = (BulkModulus/2)*( 1 + (1/(J**2.0d0)) )
 
             ! -----------------------------------------------------------------------------------
             ! The subsequent computations are made in Voigt notation
