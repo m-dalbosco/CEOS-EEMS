@@ -237,7 +237,7 @@ module ModMultiscaleAnalysis
                 PiolaVoigt = Tensor2ToVoigt(PiolaTensor)
 
                 !Homogenized Stress
-                 HomogenizedStress = HomogenizedStress + (PiolaVoigt*Weight(gp)*detJX*FactorAxiX)/TotalVolX
+                HomogenizedStress = HomogenizedStress + (PiolaVoigt*Weight(gp)*detJX*FactorAxiX)/TotalVolX
 
 
             enddo

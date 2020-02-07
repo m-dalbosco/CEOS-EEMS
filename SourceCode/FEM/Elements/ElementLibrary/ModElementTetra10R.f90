@@ -47,6 +47,7 @@ module ElementTetra10R
             procedure :: GetShapeFunctions   => GetShapeFunctions_Tetra10R
             procedure :: GetDifShapeFunctions=> GetDifShapeFunctions_Tetra10R
             procedure :: AllocateGaussPoints => AllocateGaussPointsParameters_Tetra10R
+            procedure :: GetNumberOfExtraGaussPoints => GetNumberOfExtraGaussPointsParameters_Tetra10R
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

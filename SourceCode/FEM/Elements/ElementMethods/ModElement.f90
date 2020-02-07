@@ -176,7 +176,7 @@ module Element
             class(ClassElement) :: this
             integer , intent(in) :: e
             integer , intent(inout) :: nGP
-            stop "Erro::AllocateExtraGaussPoints::Dummy"
+            stop "Erro::GetNumberOfExtraGaussPoints::Dummy"
         end subroutine
         !==========================================================================================
 
