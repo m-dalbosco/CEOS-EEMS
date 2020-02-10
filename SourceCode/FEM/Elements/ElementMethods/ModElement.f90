@@ -550,6 +550,7 @@ module Element
 
             ! Allocating memory for the Cauchy Stress (Plain States, Axisymmetric or 3D)
             Cauchy => Stress_Memory( 1:AnalysisSettings%StressSize )
+            CauchyFiber => Stress_Memory( 1:AnalysisSettings%StressSize )
             
             !Call profile to check if element has reinforcement capabilities
             call this%GetProfile(ElProfile)

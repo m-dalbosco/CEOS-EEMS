@@ -280,6 +280,8 @@ module ModExportResultFile
         real(8) , allocatable, target, dimension(:) :: U
         character(len=255) :: OptionName, OptionValue, String, FileName
         integer :: Flag_EndStep, NumberOfIterations,IterationFile
+        
+        type(ClassElementProfile)           :: ElProfile
 
 
         !************************************************************************************
@@ -315,10 +317,31 @@ module ModExportResultFile
         ! Restart Constitutive Model
         ! -----------------------------------------------------------------------------------
         do el = 1,size(FEA%ElementList)
-            do gp = 1,size(FEA%ElementList(el)%El%GaussPoints)
-                call FEA%ElementList(el)%El%GaussPoints(gp)%ConstitutiveModelDestructor()
-                call FEA%ElementList(el)%El%GaussPoints(gp)%ConstitutiveModelConstructor(FEA%AnalysisSettings)
-            enddo
+            
+            !Call profile to check if element has reinforcement capabilities
+            call FEA%ElementList(el)%El%GetProfile(ElProfile)
+            
+            if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
+            
+                do gp = 1,size(FEA%ElementList(el)%El%GaussPoints)
+                    call FEA%ElementList(el)%El%GaussPoints(gp)%ConstitutiveModelDestructor()
+                    call FEA%ElementList(el)%El%GaussPoints(gp)%ConstitutiveModelConstructor(FEA%AnalysisSettings)
+                enddo
+                
+            else !with fiber reinforcement
+                
+                do gp = 1,size(FEA%ElementList(el)%El%GaussPoints)
+                    call FEA%ElementList(el)%El%GaussPoints(gp)%ConstitutiveModelDestructor()
+                    call FEA%ElementList(el)%El%GaussPoints(gp)%ConstitutiveModelConstructor(FEA%AnalysisSettings)
+                enddo
+            
+                do gp = 1,size(FEA%ElementList(el)%El%ExtraGaussPoints)
+                    call FEA%ElementList(el)%El%ExtraGaussPoints(gp)%ConstitutiveModelDestructor()
+                    call FEA%ElementList(el)%El%ExtraGaussPoints(gp)%ConstitutiveModelConstructor(FEA%AnalysisSettings)
+                enddo
+                
+            endif
+            
         enddo
 
         ! Restart Mesh Coordinates
@@ -392,9 +415,28 @@ module ModExportResultFile
             ! SAVING THE CONVERGED STATE
             ! ----------------------------------------------------------------------------------
             do el=1,size(FEA%ElementList)
-                do gp=1,size(FEA%ElementList(el)%el%GaussPoints)
-                    call FEA%ElementList(el)%el%GaussPoints(gp)%SwitchConvergedState()
-                enddo
+                
+                !Call profile to check if element has reinforcement capabilities
+                call FEA%ElementList(el)%El%GetProfile(ElProfile)
+            
+                if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
+                
+                    do gp=1,size(FEA%ElementList(el)%el%GaussPoints)
+                        call FEA%ElementList(el)%el%GaussPoints(gp)%SwitchConvergedState()
+                    enddo
+                    
+                else !with fiber reinforcement
+                    
+                    do gp=1,size(FEA%ElementList(el)%El%GaussPoints)
+                        call FEA%ElementList(el)%El%GaussPoints(gp)%SwitchConvergedState()
+                    enddo
+                    
+                    do gp=1,size(FEA%ElementList(el)%El%ExtraGaussPoints)
+                        call FEA%ElementList(el)%El%ExtraGaussPoints(gp)%SwitchConvergedState()
+                    enddo
+                    
+                endif
+                    
             enddo
 
 

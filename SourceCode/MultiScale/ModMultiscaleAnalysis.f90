@@ -171,76 +171,191 @@ module ModMultiscaleAnalysis
         real(8) , dimension(:,:) , pointer :: DifSF
         real(8) , dimension(this%AnalysisSettings%AnalysisDimension,this%AnalysisSettings%AnalysisDimension) :: JacobX
         real(8) , dimension(:)   , pointer :: ShapeFunctions
+        type(ClassElementProfile)           :: ElProfile
+        real(8) , pointer , dimension(:)    :: CauchyFiber
+        real(8)                             :: WeightFiber, A0f, L0f, TotalVolFiber, VF, aux
         !************************************************************************************
 
         !************************************************************************************
         ! STRESS HOMOGENISATION - FIRST PIOLA
         !************************************************************************************
 
-
         DimProb = this%AnalysisSettings%AnalysisDimension
-
+        
         TotalVolX = 0.0d0
+        TotalVolFiber = 0.0d0
         !Loop over Elements
         do e = 1,size(this%ElementList)
-            TotalVolX = TotalVolX + this%ElementList(e)%El%VolumeX
+            
+            !Call profile to check if element has reinforcement capabilities
+            call this%ElementList(e)%El%GetProfile(ElProfile)
+            
+            if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
+            
+                TotalVolX = TotalVolX + this%ElementList(e)%El%VolumeX
+            
+            else
+                
+                TotalVolX = TotalVolX + this%ElementList(e)%El%VolumeX
+                
+                !Loop over gauss points - embedded fibers
+                do gp = 1,size(this%ElementList(e)%El%ExtraGaussPoints) !Calculate total fiber volume inside element e
+                    
+                    !Get initial area and lenght
+                    A0f = this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0
+                    L0f = this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0
+                    
+                    TotalVolFiber = TotalVolFiber + A0f*L0f;
+                    
+                enddo
+
+            endif
+            
         enddo
+        
+        TotalVolFiber = TotalVolFiber/3 !IMPORTANTE!!! TROCAR DENOMINADOR DE ACORDO COM NPINT UTILIZADOS POR FIBRA
+        VF = TotalVolFiber/TotalVolX !Fração volumétrica do RVE
 
         FactorAxiX = 1.0d0
         HomogenizedStress = 0.0d0
         !Loop over Elements
         do e = 1,size(this%ElementList)
+            
+            !Call profile to check if element has reinforcement capabilities
+            call this%ElementList(e)%El%GetProfile(ElProfile)
+            
+            if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
 
-            nNodes = this%ElementList(e)%El%GetNumberOfNodes()
+                nNodes = this%ElementList(e)%El%GetNumberOfNodes()
 
-            DifSF => DifSF_Memory ( 1:nNodes , 1:DimProb )
+                DifSF => DifSF_Memory ( 1:nNodes , 1:DimProb )
 
-            ShapeFunctions => SF_Memory( 1:nNodes )
+                ShapeFunctions => SF_Memory( 1:nNodes )
 
-            ! Allocating memory for the Cauchy Stress (Plain States, Axisymmetric or 3D)
-            Cauchy => Stress_Memory( 1:this%AnalysisSettings%StressSize )
+                ! Allocating memory for the Cauchy Stress (Plain States, Axisymmetric or 3D)
+                Cauchy => Stress_Memory( 1:this%AnalysisSettings%StressSize )
 
-            ! Number of degrees of freedom
-            call this%ElementList(e)%El%GetElementNumberDOF(this%AnalysisSettings,NDOFel)
+                ! Number of degrees of freedom
+                call this%ElementList(e)%El%GetElementNumberDOF(this%AnalysisSettings,NDOFel)
 
-            ! Retrieving gauss points parameters for numerical integration
-            call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
+                ! Retrieving gauss points parameters for numerical integration
+                call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
 
-            !Loop over gauss points
-            do gp = 1, size(NaturalCoord,dim=1)
+                !Loop over gauss points
+                do gp = 1, size(NaturalCoord,dim=1)
 
+                    call this%ElementList(e)%El%GetDifShapeFunctions(NaturalCoord(gp,:) , DifSF )
 
-                call this%ElementList(e)%El%GetDifShapeFunctions(NaturalCoord(gp,:) , DifSF )
-
-                !Jacobian
-                JacobX=0.0d0
-                do i=1,DimProb
-                    do j=1,DimProb
-                        do n=1,nNodes
-                            JacobX(i,j)=JacobX(i,j) + DifSf(n,i) * this%ElementList(e)%El%ElementNodes(n)%Node%CoordX(j)
+                    !Jacobian
+                    JacobX=0.0d0
+                    do i=1,DimProb
+                        do j=1,DimProb
+                            do n=1,nNodes
+                                JacobX(i,j)=JacobX(i,j) + DifSf(n,i) * this%ElementList(e)%El%ElementNodes(n)%Node%CoordX(j)
+                            enddo
                         enddo
                     enddo
+
+                    !Determinant of the Jacobian
+                    detJX = det(JacobX)
+
+                    !Get Cauchy Stress
+                    Cauchy => this%ElementList(e)%El%GaussPoints(gp)%Stress
+
+                    CauchyTensor = VoigtSymToTensor2(Cauchy)
+
+                    !Compute First Piola
+                    PiolaTensor = StressTransformation(this%ElementList(e)%El%GaussPoints(gp)%F,CauchyTensor,StressMeasures%Cauchy,StressMeasures%FirstPiola)
+
+                    ! To Voigt
+                    PiolaVoigt = Tensor2ToVoigt(PiolaTensor)
+
+                    !Homogenized Stress
+                    HomogenizedStress = HomogenizedStress + (PiolaVoigt*Weight(gp)*detJX*FactorAxiX)/TotalVolX
+
                 enddo
+                
+            else !with fiber reinforcement
+                
+                nNodes = this%ElementList(e)%El%GetNumberOfNodes()
 
-                !Determinant of the Jacobian
-                detJX = det(JacobX)
+                DifSF => DifSF_Memory ( 1:nNodes , 1:DimProb )
 
-                !Get Cauchy Stress
-                Cauchy => this%ElementList(e)%El%GaussPoints(gp)%Stress
+                ShapeFunctions => SF_Memory( 1:nNodes )
 
-                CauchyTensor = VoigtSymToTensor2(Cauchy)
+                ! Allocating memory for the Cauchy Stresses (Plain States, Axisymmetric or 3D)
+                Cauchy => Stress_Memory( 1:this%AnalysisSettings%StressSize )
+                CauchyFiber => Stress_Memory( 1:this%AnalysisSettings%StressSize )
 
-                !Compute First Piola
-                PiolaTensor = StressTransformation(this%ElementList(e)%El%GaussPoints(gp)%F,CauchyTensor,StressMeasures%Cauchy,StressMeasures%FirstPiola)
+                ! Number of degrees of freedom
+                call this%ElementList(e)%El%GetElementNumberDOF(this%AnalysisSettings,NDOFel)
 
-                ! To Voigt
-                PiolaVoigt = Tensor2ToVoigt(PiolaTensor)
+                ! Retrieving gauss points parameters for numerical integration - host element
+                call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
 
-                !Homogenized Stress
-                HomogenizedStress = HomogenizedStress + (PiolaVoigt*Weight(gp)*detJX*FactorAxiX)/TotalVolX
+                !Loop over gauss points - host element
+                do gp = 1, size(NaturalCoord,dim=1)
 
+                    call this%ElementList(e)%El%GetDifShapeFunctions(NaturalCoord(gp,:) , DifSF )
 
-            enddo
+                    !Jacobian
+                    JacobX=0.0d0
+                    do i=1,DimProb
+                        do j=1,DimProb
+                            do n=1,nNodes
+                                JacobX(i,j)=JacobX(i,j) + DifSf(n,i) * this%ElementList(e)%El%ElementNodes(n)%Node%CoordX(j)
+                            enddo
+                        enddo
+                    enddo
+
+                    !Determinant of the Jacobian
+                    detJX = det(JacobX)
+
+                    !Get Cauchy Stress
+                    Cauchy => this%ElementList(e)%El%GaussPoints(gp)%Stress
+                    
+                    CauchyTensor = VoigtSymToTensor2(Cauchy)
+
+                    !Compute First Piola
+                    PiolaTensor = StressTransformation(this%ElementList(e)%El%GaussPoints(gp)%F,CauchyTensor,StressMeasures%Cauchy,StressMeasures%FirstPiola)
+
+                    ! To Voigt
+                    PiolaVoigt = Tensor2ToVoigt(PiolaTensor)
+
+                    !Homogenized Stress
+                    HomogenizedStress = HomogenizedStress + (1-VF)*(PiolaVoigt*Weight(gp)*detJX*FactorAxiX)/TotalVolX
+                    
+                enddo
+                
+                do gp = 1,size(this%ElementList(e)%El%ExtraGaussPoints)
+                    
+                    !Get Cauchy Stress
+                    CauchyFiber => this%ElementList(e)%El%ExtraGaussPoints(gp)%Stress
+                    
+                    !Correction
+                    CauchyFiber = CauchyFiber*det(this%ElementList(e)%El%ExtraGaussPoints(gp)%F)
+                    
+                    CauchyTensor = VoigtSymToTensor2(CauchyFiber)
+                    
+                    !Get fiber weight
+                    WeightFiber = this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight
+                    
+                    !Get initial area and lenght
+                    A0f = this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0
+                    L0f = this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0
+
+                    !Compute First Piola
+                    PiolaTensor = StressTransformation(this%ElementList(e)%El%ExtraGaussPoints(gp)%F,CauchyTensor,StressMeasures%Cauchy,StressMeasures%FirstPiola)
+
+                    !To Voigt
+                    PiolaVoigt = Tensor2ToVoigt(PiolaTensor)
+
+                    !Homogenized Stress
+                    HomogenizedStress = HomogenizedStress + 0.5*L0f*A0f*PiolaVoigt*WeightFiber/TotalVolX
+                    
+                enddo
+                
+            endif
 
         enddo
 
