@@ -173,7 +173,7 @@ module ModMultiscaleAnalysis
         real(8) , dimension(:)   , pointer :: ShapeFunctions
         type(ClassElementProfile)           :: ElProfile
         real(8) , pointer , dimension(:)    :: CauchyFiber
-        real(8)                             :: WeightFiber, A0f, L0f, TotalVolFiber, VF, aux
+        real(8)                             :: WeightFiber, A0f, L0f
         !************************************************************************************
 
         !************************************************************************************
@@ -183,39 +183,11 @@ module ModMultiscaleAnalysis
         DimProb = this%AnalysisSettings%AnalysisDimension
         
         TotalVolX = 0.0d0
-        TotalVolFiber = 0.0d0
         !Loop over Elements
         do e = 1,size(this%ElementList)
-            
-            !Call profile to check if element has reinforcement capabilities
-            call this%ElementList(e)%El%GetProfile(ElProfile)
-            
-            if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
-            
                 TotalVolX = TotalVolX + this%ElementList(e)%El%VolumeX
-            
-            else
-                
-                TotalVolX = TotalVolX + this%ElementList(e)%El%VolumeX
-                
-                !Loop over gauss points - embedded fibers
-                do gp = 1,size(this%ElementList(e)%El%ExtraGaussPoints) !Calculate total fiber volume inside element e
-                    
-                    !Get initial area and lenght
-                    A0f = this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0
-                    L0f = this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0
-                    
-                    TotalVolFiber = TotalVolFiber + A0f*L0f;
-                    
-                enddo
-
-            endif
-            
         enddo
         
-        TotalVolFiber = TotalVolFiber/3 !IMPORTANTE!!! TROCAR DENOMINADOR DE ACORDO COM NPINT UTILIZADOS POR FIBRA
-        VF = TotalVolFiber/TotalVolX !Fração volumétrica do RVE
-
         FactorAxiX = 1.0d0
         HomogenizedStress = 0.0d0
         !Loop over Elements
@@ -323,7 +295,7 @@ module ModMultiscaleAnalysis
                     PiolaVoigt = Tensor2ToVoigt(PiolaTensor)
 
                     !Homogenized Stress
-                    HomogenizedStress = HomogenizedStress + (1-VF)*(PiolaVoigt*Weight(gp)*detJX*FactorAxiX)/TotalVolX
+                    HomogenizedStress = HomogenizedStress + (PiolaVoigt*Weight(gp)*detJX*FactorAxiX)/TotalVolX
                     
                 enddo
                 
@@ -331,10 +303,6 @@ module ModMultiscaleAnalysis
                     
                     !Get Cauchy Stress
                     CauchyFiber => this%ElementList(e)%El%ExtraGaussPoints(gp)%Stress
-                    
-                    !Correction
-                    CauchyFiber = CauchyFiber*det(this%ElementList(e)%El%ExtraGaussPoints(gp)%F)
-                    
                     CauchyTensor = VoigtSymToTensor2(CauchyFiber)
                     
                     !Get fiber weight
@@ -351,7 +319,7 @@ module ModMultiscaleAnalysis
                     PiolaVoigt = Tensor2ToVoigt(PiolaTensor)
 
                     !Homogenized Stress
-                    HomogenizedStress = HomogenizedStress + 0.5*L0f*A0f*PiolaVoigt*WeightFiber/TotalVolX
+                    HomogenizedStress = HomogenizedStress + (0.5*L0f*A0f*PiolaVoigt*WeightFiber)/TotalVolX
                     
                 enddo
                 

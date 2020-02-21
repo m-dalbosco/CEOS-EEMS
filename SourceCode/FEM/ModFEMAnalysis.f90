@@ -2419,7 +2419,15 @@ module FEMAnalysis
                             STOP
             
                         else
-                
+                            
+                            if (e==1) then
+                            
+                            write(*,*) ''
+                            write(*,*) 'Reading file Fiber_info.dat'
+                            write(*,*) ''
+                            
+                            endif
+                            
                             call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
             
                             do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
