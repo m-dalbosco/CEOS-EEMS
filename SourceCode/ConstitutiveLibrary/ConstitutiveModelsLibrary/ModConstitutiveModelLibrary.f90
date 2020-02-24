@@ -33,6 +33,7 @@ module ConstitutiveModelLibrary
     use ModViscoelasticMatrixFiber
     use NeoHookeanFiberReinf
     use NeoHookeanFiberExp
+    use NeoHookeanFiberRecruit
 
     ! Constitutive Models ID registered:
     type ClassConstitutiveModels
@@ -51,6 +52,7 @@ module ConstitutiveModelLibrary
         integer   :: ViscoelasticMatrixFiberModel   = 13
         integer   :: NeoHookeanFiberReinfModel      = 14
         integer   :: NeoHookeanFiberExpModel        = 15
+        integer   :: NeoHookeanFiberRecruitModel    = 16
     end type
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -119,9 +121,11 @@ module ConstitutiveModelLibrary
 
             type(ClassViscoelasticMatrixFiber_3D)      , pointer , dimension(:) :: ViscoMatrixFiber_3D
             
-            type(ClassNeoHookeanFiberReinf_3D)          , pointer , dimension(:) :: NHFR_3D
+            type(ClassNeoHookeanFiberReinf_3D)         , pointer , dimension(:) :: NHFR_3D
             
-            type(ClassNeoHookeanFiberExp_3D)          , pointer , dimension(:) :: NHFE_3D
+            type(ClassNeoHookeanFiberExp_3D)           , pointer , dimension(:) :: NHFE_3D
+            
+            type(ClassNeoHookeanFiberRecruit_3D)       , pointer , dimension(:) :: NHFREC_3D
 ! TODO (Thiago#1#02/13/15): Trocar threeDimensional para 3D
 
 		    !************************************************************************************
@@ -413,6 +417,22 @@ module ConstitutiveModelLibrary
 
                     endif
                 ! -------------------------------------------------------------------------------
+                    
+                ! -------------------------------------------------------------------------------
+                ! Neo-Hookean matrix with fiber recruitment
+                ! -------------------------------------------------------------------------------
+                case (ConstitutiveModels % NeoHookeanFiberRecruitModel)
+
+                    if ( AnalysisSettings%Hypothesis == HypothesisOfAnalysis%ThreeDimensional ) then
+
+                            allocate( NHFREC_3D(nGP) )
+                            GaussPoints => NHFREC_3D
+
+                    else
+                            call Error("Error: Neo Hookean Fiber Recruitment Model - analysis type not available.")
+
+                    endif
+                ! -------------------------------------------------------------------------------
 
                 case default
 
@@ -530,6 +550,10 @@ module ConstitutiveModelLibrary
             elseif ( Comp%CompareStrings('neo_hookean_fiber_exp', model) .and. (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) ) then
 
                 modelID = ConstitutiveModels%NeoHookeanFiberExpModel
+                
+            elseif ( Comp%CompareStrings('neo_hookean_fiber_recruit', model) .and. (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) ) then
+
+                modelID = ConstitutiveModels%NeoHookeanFiberRecruitModel
 
             else
 

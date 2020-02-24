@@ -2383,11 +2383,11 @@ module FEMAnalysis
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0, w
+            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0, w, I4r
             real(8) :: mX(3), IP(3), NodalValuesX(50)
             integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes, i, j, nGP, El_ID
             
-            real(8),dimension(9) :: FiberData
+            real(8),dimension(10) :: FiberData
             logical              :: file_exists
 
 
@@ -2471,6 +2471,8 @@ module FEMAnalysis
                                                 mX(3) = FiberData(7)
                                                 L0 = FiberData(8)
                                                 A0 = FiberData(9)
+                                                I4r = FiberData(10)
+                                                I4r = 0.0
                                             
                                                 this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord = IP
                                                 this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight = w
@@ -2478,6 +2480,7 @@ module FEMAnalysis
                                                 this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
                                                 this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
                                                 this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
+                                                this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%I4r = I4r
                                             
                                             elseif (nGP /= 0) then
                                                 read(87,*)

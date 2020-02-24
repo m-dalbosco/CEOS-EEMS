@@ -22,6 +22,7 @@ module ConstitutiveModel
         real(8) :: Weight
         real(8) :: A0
         real(8) :: L0
+        real(8) :: I4r
 
     endtype
 
