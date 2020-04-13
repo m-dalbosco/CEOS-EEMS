@@ -285,7 +285,6 @@ module ModMultiscaleAnalysis
 
                     !Get Cauchy Stress
                     Cauchy => this%ElementList(e)%El%GaussPoints(gp)%Stress
-                    
                     CauchyTensor = VoigtSymToTensor2(Cauchy)
 
                     !Compute First Piola

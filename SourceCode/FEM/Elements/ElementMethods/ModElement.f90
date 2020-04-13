@@ -67,7 +67,6 @@ module Element
             procedure :: GetProfile
             procedure :: AllocateGaussPoints
             procedure :: IntegrateLine
-            procedure :: GetNumberOfExtraGaussPoints
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -171,15 +170,6 @@ module Element
             call error("Erro::IntegrateLine::Dummy")
          end subroutine
          !==========================================================================================
-        subroutine GetNumberOfExtraGaussPoints(this,e,nGP)
-            implicit none
-            class(ClassElement) :: this
-            integer , intent(in) :: e
-            integer , intent(inout) :: nGP
-            stop "Erro::GetNumberOfExtraGaussPoints::Dummy"
-        end subroutine
-        !==========================================================================================
-
 
 
         subroutine LoadProfile(this , ElementType , NumberOfNodes , IsQuadratic , GeometryType , FullIntegrationCapable , MeanDilatationCapable , FiberReinforcementCapable , ElementDimension )

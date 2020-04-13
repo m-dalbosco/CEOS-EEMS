@@ -45,7 +45,6 @@ module ElementHexa8R
             procedure :: GetShapeFunctions           => GetShapeFunctions_Hexa8R
             procedure :: GetDifShapeFunctions        => GetDifShapeFunctions_Hexa8R
             procedure :: AllocateGaussPoints         => AllocateGaussPointsParameters_Hexa8R
-            procedure :: GetNumberOfExtraGaussPoints => GetNumberOfExtraGaussPointsParameters_Hexa8R
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -329,89 +328,5 @@ module ElementHexa8R
 
         end subroutine
         !==========================================================================================
-        
-        !==========================================================================================
-        ! Method AllocateExtraGaussPointsParameters_Hexa8R: This method returns the natural coordinates
-        ! and weights used in the Gaussian Quadrature of the fibers
-        !------------------------------------------------------------------------------------------
-        ! Modifications:
-        ! Date:         Author:
-        !==========================================================================================
-        subroutine GetNumberOfExtraGaussPointsParameters_Hexa8R(this,e,nGP)
-
-		    !************************************************************************************
-            ! DECLARATIONS OF VARIABLES
-		    !************************************************************************************
-            ! Modules and implicit declarations
-            ! -----------------------------------------------------------------------------------
-             implicit none
-
-            ! Object
-            ! -----------------------------------------------------------------------------------
-            class(ClassElementHexa8R) :: this
-            
-            ! Input variables
-            ! -----------------------------------------------------------------------------------
-            integer , intent(in) :: e
-
-            ! Output variables
-            ! -----------------------------------------------------------------------------------
-            integer , intent(inout) :: nGP
-
-            ! Internal variables
-            ! -----------------------------------------------------------------------------------
-            integer              :: i, j
-            logical              :: file_exists
-            integer              :: El_ID
-            
-		    !************************************************************************************
-
-		    !************************************************************************************
-            ! READ NUMBER OF EXTRA GAUSS POINTS - Hexa8R
-		    !************************************************************************************
-
-            inquire(file='Fiber_info.dat',exist=file_exists)
-            
-            if (.not.file_exists) then
-            
-                write(*,*) 'File Fiber_info.dat not found'
-                STOP
-            
-            else
-            
-                open(87,file='Fiber_info.dat',status='old')
-                
-                do i=1,e                
-                    read(87,*)
-                    read(87,*)
-                    read(87,'(i)') El_ID
-                    read(87,*)
-                    read(87,'(i)') nGP
-                    read(87,*)
-                    
-                    if (i==e) then
-
-                        do j=1,nGP
-                            read(87,*)
-                        enddo
-                        
-                    elseif (nGP /= 0) then
-                        
-                        do j=1,nGP
-                            read(87,*)
-                        enddo
-
-                    endif
-                                    
-                enddo
-                
-                close(87)
-
-            endif
-             
-            end subroutine
-        !==========================================================================================
-
-
-
+      
 end module

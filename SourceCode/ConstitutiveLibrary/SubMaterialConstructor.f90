@@ -31,6 +31,7 @@ subroutine MaterialConstructor( Element, GlobalNodesList, Material, AnalysisSett
 	type(ClassNodes) , dimension(:) , pointer             :: GlobalNodesList
 	class(ClassConstitutiveModelWrapper)  , pointer       :: Material
     type(ClassElementProfile)                             :: ElProfile
+    logical                                               :: file_exists
 
 	! Internal variables
 	! -----------------------------------------------------------------------------------
@@ -85,8 +86,27 @@ subroutine MaterialConstructor( Element, GlobalNodesList, Material, AnalysisSett
     
     if (ElProfile%AcceptFiberReinforcement == .true.) then
         
-        call Element%GetNumberOfExtraGaussPoints(e,nGPe)
+        if (e==1) then
         
+            inquire(file='Fiber_info.dat',exist=file_exists)
+            
+            if (.not.file_exists) then
+            
+                write(*,*) 'File Fiber_info.dat not found'
+                STOP
+            
+            else
+               
+                write(*,*) 'Allocating fiber Gauss points...'
+                write(*,*) ''
+                
+                open(87,file='Fiber_info.dat',status='old')
+                read(87,*)
+            endif
+        endif
+        
+        read(87,*) nGPe
+                
         ! Allocate the constitutive model for extra Gauss point
         ! -----------------------------------------------------------------------------------
         call AllocateConstitutiveModel( Material%ModelEnumerator , AnalysisSettings , nGPe ,  Element%ExtraGaussPoints )
@@ -105,7 +125,7 @@ subroutine MaterialConstructor( Element, GlobalNodesList, Material, AnalysisSett
             call Element%ExtraGaussPoints(gp)%ConstitutiveModelDestructor()
             call Element%ExtraGaussPoints(gp)%ConstitutiveModelConstructor(AnalysisSettings)
         enddo
-    
+                
     endif
 
 end subroutine

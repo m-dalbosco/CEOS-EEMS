@@ -2388,7 +2388,8 @@ module FEMAnalysis
             integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes, i, j, nGP, El_ID
             
             real(8),dimension(10) :: FiberData
-            logical              :: file_exists
+            logical               :: file_exists
+            character(len=36)    :: line
 
 
             real(8) , pointer , dimension(:,:) :: NaturalCoord
@@ -2404,112 +2405,95 @@ module FEMAnalysis
             ! Cálculo das direções dos reforços de fibra
             !####################################################################################
 
-                do e = 1 , size(this%ElementList)
-                
-                    !Call profile to check if element has reinforcement capabilities
-                    call this%ElementList(e)%El%GetProfile(ElProfile)
-    
-                    if (ElProfile%AcceptFiberReinforcement == .true.) then
+            call this%ElementList(1)%El%GetProfile(ElProfile)
+            
+                if (ElProfile%AcceptFiberReinforcement == .true.) then
                         
                         inquire(file='Fiber_info.dat',exist=file_exists)
-            
+                
                         if (.not.file_exists) then
-            
+                
                             write(*,*) 'File Fiber_info.dat not found'
                             STOP
-            
+                
                         else
                             
-                            if (e==1) then
+                            do e = 1 , size(this%ElementList)
                             
-                            write(*,*) ''
-                            write(*,*) 'Reading file Fiber_info.dat'
-                            write(*,*) ''
-                            
-                            endif
-                            
-                            call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
-            
-                            do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
-
-                                mX(1) = 0.0d0
-                                mX(2) = 0.0d0
-                                mX(3) = 0.0d0
-                                A0 = 0.0d0
-                                L0 = 0.0d0
-            
-                                this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
-                                this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
-                                this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
-                    
-                            enddo
+                                call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
                 
-                            do gp = 1,size(this%ElementList(e)%El%ExtraGaussPoints) !fibers Gauss points
-                            
-                                open(87,file='Fiber_info.dat',status='old')
+                                do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
                 
-                                do i=1,e                
-                                    read(87,*)
-                                    read(87,*)
-                                    read(87,'(i)') El_ID
-                                    read(87,*)
-                                    read(87,'(i)') nGP
-                                    read(87,*)
+                                    mX(1) = 0.0d0
+                                    mX(2) = 0.0d0
+                                    mX(3) = 0.0d0
+                                    A0 = 0.0d0
+                                    L0 = 0.0d0
+                
+                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
+                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
+                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
                     
-                                    if (i==e) then
-                                                
-                                        do j=1,nGP
-                                            if (j==gp) then
-                                                read(87,*) FiberData(:)
-                                            
-                                                IP(1) = FiberData(1)
-                                                IP(2) = FiberData(2)
-                                                IP(3) = FiberData(3)
-                                                w = FiberData(4)
-                                                mX(1) = FiberData(5)
-                                                mX(2) = FiberData(6)
-                                                mX(3) = FiberData(7)
-                                                L0 = FiberData(8)
-                                                A0 = FiberData(9)
-                                                I4r = FiberData(10)
-                                                I4r = 0.0
-                                            
-                                                this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord = IP
-                                                this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight = w
-
-                                                this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
-                                                this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
-                                                this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
-                                                this%ElementList(e)%El%ExtraGaussPoints(gp)%AdditionalVariables%I4r = I4r
-                                            
-                                            elseif (nGP /= 0) then
-                                                read(87,*)
-                                            endif
-                                        enddo
-                        
-                                    elseif (nGP /= 0) then
-                        
-                                    do j=1,nGP
-                                        read(87,*)
-                                    enddo
-
-                                    endif
-         
                                 enddo
-                                
-                                close(87)
-                    
+                            
                             enddo
+                        
+                            write(*,*) ''
+                            write(*,*) 'Reading fiber info...'
+
+                        
+                            open(87,file='Fiber_info.dat',status='old')
+                        
+                            read(87,'(a)') line
+                            
+                            if (line=='Fiber integration points per element') then
+                                do i=1,size(this%ElementList)+1
+                                    read(87,*)
+                                enddo
+                            endif
+                                                        
+                            read(87,*)
+                            read(87,*)
+                        
+                            do while (.not. EOF(87))
+                        
+                                read(87,*) El_ID
+                
+                                do gp = 1,size(this%ElementList(El_ID)%El%ExtraGaussPoints) !fibers Gauss points
+
+                                    read(87,*) FiberData(:)
+                                            
+                                    IP(1) = FiberData(1)
+                                    IP(2) = FiberData(2)
+                                    IP(3) = FiberData(3)
+                                    w = FiberData(4)
+                                    mX(1) = FiberData(5)
+                                    mX(2) = FiberData(6)
+                                    mX(3) = FiberData(7)
+                                    L0 = FiberData(8)
+                                    A0 = FiberData(9)
+                                    I4r = FiberData(10)
+                                            
+                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord = IP
+                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight = w
+                
+                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
+                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
+                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
+                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%I4r = I4r
+
+                                enddo
+
+                            enddo
+                                
+                            close(87)
+                            write(*,*) 'Done!'
+                            write(*,*) ''
                             
                         endif
                                             
-                    endif
-                                
-                enddo
-                
-            
-            
-            
+                    endif   
+    
             !####################################################################################
             ! Cálculo das tangentes da hélice
             !####################################################################################
