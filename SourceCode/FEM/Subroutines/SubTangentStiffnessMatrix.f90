@@ -65,7 +65,7 @@ subroutine TangentStiffnessMatrix( AnalysisSettings , ElementList , nDOF, Kg )
 
     if (AnalysisSettings%MultiscaleAnalysis) then
 
-        if ((AnalysisSettings%MultiscaleModel == MultiscaleModels%Taylor) .or. (AnalysisSettings%MultiscaleModel == MultiscaleModels%Linear) ) then
+        if ((AnalysisSettings%MultiscaleModel == MultiscaleModels%Taylor) .or. (AnalysisSettings%MultiscaleModel == MultiscaleModels%Linear) .or. (AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic)) then
 
 
             ! Assemble Tangent Stiffness Matrix - Multiscale Taylor and Linear

@@ -111,8 +111,10 @@ program MAIN
         ! Allocating memory for the sparse matrix (pre-assembling)
         ! ---------------------------------------------------------------------------------------------
         if (Analysis%AnalysisSettings%MultiscaleAnalysis) then
-            if ((Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Taylor) .or. (Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Linear) ) then
+            if ((Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Taylor) .or. (Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Linear)) then
                 !call Analysis%AllocateKgSparse
+                call Analysis%AllocateKgSparseUpperTriangular
+            elseif (Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
                 call Analysis%AllocateKgSparseUpperTriangular
             elseif (Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Minimal) then
                 !call Analysis%AllocateKgSparseMultiscaleMinimal

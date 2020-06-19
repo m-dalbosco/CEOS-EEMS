@@ -1026,7 +1026,7 @@ module FEMAnalysis
 
                     if (this%AnalysisSettings%MultiscaleAnalysis) then
 
-                        if ((this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Taylor) .or. (this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Linear) ) then
+                        if ((this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Taylor) .or. (this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Linear) .or. (this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic)) then
 
                             call this%AdditionalMaterialModelRoutine()
                             call QuasiStaticAnalysisFEM( this%ElementList, this%AnalysisSettings, this%GlobalNodesList , &
