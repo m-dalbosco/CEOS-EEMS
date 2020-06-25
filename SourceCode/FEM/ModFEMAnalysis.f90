@@ -1739,37 +1739,10 @@ module FEMAnalysis
                     ! Rotina usada somente para transportar o gradiente de deformação macro, no instante corrente (n+1), na variável DeltaFext.
                     !-------------------------------------------------------------
                     call BC%GetBoundaryConditions(AnalysisSettings, LC, ST, Fext_alpha0, DeltaFext,FEMSoE%DispDOF, X, DeltaUPresc)              
-    
-                    ! Mapeando os graus de liberdade da matrix esparsa para a aplicação
-                    ! da CC de deslocamento prescrito
-                    !-----------------------------------------------------------------------------------
-                    if ( (LC == 1) .and. (ST == 1) ) then
-
-                        allocate( KgValZERO(size(FEMSoE%Kg%Val)), KgValONE(size(FEMSoE%Kg%Val)) )
-
-                        call BC%AllocatePrescDispSparseMapping(FEMSoE%Kg, FEMSoE%DispDOF, KgValZERO, KgValONE, contZERO, contONE)
-
-                        allocate( FEMSoE%PrescDispSparseMapZERO(contZERO), FEMSoE%PrescDispSparseMapONE(contONE) )
-
-                        FEMSoE%PrescDispSparseMapZERO(:) = KgValZERO(1:contZERO)
-                        FEMSoE%PrescDispSparseMapONE(:) = KgValONE(1:contONE)
-
-                        call BC%AllocateFixedSupportSparseMapping(FEMSoE%Kg, KgValZERO, KgValONE, contZERO, contONE)
-
-                        allocate( FEMSoE%FixedSupportSparseMapZERO(contZERO), FEMSoE%FixedSupportSparseMapONE(contONE) )
-
-                        FEMSoE%FixedSupportSparseMapZERO(:) = KgValZERO(1:contZERO)
-                        FEMSoE%FixedSupportSparseMapONE(:) = KgValONE(1:contONE)
-
-                        deallocate( KgValZERO, KgValONE )
-
-
-                    end if
-                    !-----------------------------------------------------------------------------------                    
+            
                     FEMSoE%Fmacro_current(1:9) = DeltaFext(1:9)
 
                     !-------------------------------------------------------------
-
 
                     call BC%GetTimeInformation(LC,ST,Time_alpha0,DeltaTime)
 

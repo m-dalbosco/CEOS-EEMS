@@ -475,9 +475,10 @@ module ModMultiscalePeriodicFEMSoE
             endif
                     
         enddo
-        
-        
+                
         call this%AnalysisSettings%GetTotalNumberOfDOF(this%GlobalNodesList, nDOF)
+        
+        nDOFRed = nDOF - 3*(nNodBX+nNodBY+nNodBZ+(3*nNodBXY)+(3*nNodBXZ)+(3*nNodBYZ)+7)
         
         call SparseMatrixInit(TMatSparse , nDOF)
             
