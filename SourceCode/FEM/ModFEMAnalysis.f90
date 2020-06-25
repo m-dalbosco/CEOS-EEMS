@@ -1411,17 +1411,14 @@ module FEMAnalysis
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             
-            real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged
+            real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged, XGuess, X
             real(8) :: DeltaTime , Time_alpha0
             real(8) :: alpha, alpha_max, alpha_min, alpha_aux
-            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep!, i, j
+            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, nDOFRed
             real(8), parameter :: GR= (1.0d0 + dsqrt(5.0d0))/2.0d0
 
             integer, allocatable, dimension(:) :: KgValZERO, KgValONE
             integer :: contZERO, contONE
-            
-            !type(SparseMatrix)            :: TMatSparse
-            !type(ClassGlobalSparseMatrix) :: TMat, KgAux, KgRed
             
             type(ClassMultiscalePeriodicFEMSoE) :: FEMSoE
 
@@ -1450,24 +1447,18 @@ module FEMAnalysis
             allocate( U(nDOF), DeltaUPresc(nDOF), Ubar_alpha0(nDOF), Uconverged(nDOF)  )
             
             
-            !call SparseMatrixInit( TMatSparse , nDOF )
+            allocate(FEMSoE%TMat,FEMSoE%KgRed)
+            allocate(FEMSoE%KgRed%RowMap(size(FEMSoE%Kg%RowMap)))
+            allocate(FEMSoE%KgRed%Val(size(FEMSoE%Kg%Val)))
+            allocate(FEMSoE%KgRed%Col(size(FEMSoE%Kg%Col)))
+            FEMSoE%KgRed%RowMap = 0.0d0
+            FEMSoE%KgRed%Val = 0.0d0
+            FEMSoE%KgRed%Col = 0.0d0
+            call FEMSoE%BuildT(nDOFRed)
             
-            !do i=1,nDOF
-            !    do j=1,nDOF
-            !        if (i==j) then
-            !            call SparseMatrixSetVal( i , j , 1.0d0 , TMatSparse )
-            !        endif
-            !    enddo
-            !enddo
             
-            !Converting the sparse matrix to coordinate format (used by Pardiso Sparse Solver)
-            !call ConvertToCoordinateFormat( TMatSparse , TMat%Row , TMat%Col , TMat%Val , TMat%RowMap)
 
-            !Releasing memory
-            !call SparseMatrixKill(TMatSparse)
-            
-            !call mkl_sparse_spmm('SPARSE_OPERATION_TRANSPOSE',TMat,Kg,KgAux)
-            !call mkl_sparse_spmm('SPARSE_OPERATION_NON_TRANSPOSE',KgAux,TMat,KgRed)
+            allocate(X(nDOFRed),XGuess(nDOFRed))
             
             U = 0.0d0
             Ubar_alpha0 = 0.0d0
@@ -1546,8 +1537,15 @@ module FEMAnalysis
                         FEMSoE % Fext = Fext_alpha0 + alpha*DeltaFext
                         FEMSoE % Ubar = Ubar_alpha0 + alpha*DeltaUPresc
 
-
-                        call NLSolver%Solve( FEMSoE , XGuess = Uconverged , X = U )
+                        !Reduces XGuess to solve problem with periodic boundary conditions
+                        XGuess = 0.0d0
+                        call mkl_dcsrgemv('T', nDOF, FEMSoE%TMat%Val, FEMSoE%TMat%RowMap, FEMSoE%TMat%Col, UConverged, XGuess)
+                                                
+                        call NLSolver%Solve( FEMSoE , XGuess , X )
+                        
+                        !Retrieves full fluctuation vector from the reduced vector X
+                        U = 0.0d0
+                        call mkl_dcsrgemv('N', nDOF, FEMSoE%TMat%Val, FEMSoE%TMat%RowMap, FEMSoE%TMat%Col, X, U)
 
                         IF (NLSolver%Status%Error) then
 
