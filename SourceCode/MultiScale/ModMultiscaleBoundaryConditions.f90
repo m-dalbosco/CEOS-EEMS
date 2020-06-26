@@ -59,7 +59,7 @@ module ModMultiscaleBoundaryConditions
 
         contains
             procedure :: GetBoundaryConditions => GetBoundaryConditionsMultiscalePeriodic
-            ! Mesma de FEM + matrix T para impor periodicidade
+            !procedure :: ApplyBoundaryConditionsNEW => ApplyBoundaryConditionsMultiscalePeriodic
 
         end type
     !-----------------------------------------------------------------------------------
@@ -621,7 +621,94 @@ module ModMultiscaleBoundaryConditions
     end subroutine
     !=================================================================================================
     
+    !=================================================================================================
+    subroutine ApplyBoundaryConditionsMultiscalePeriodic(this, Kg , R , Presc_Disp_DOF , Ubar , U, PrescDispSparseMapZERO, PrescDispSparseMapONE, FixedSupportSparseMapZERO, FixedSupportSparseMapONE )
 
+        !************************************************************************************
+        ! DECLARATIONS OF VARIABLES
+        !************************************************************************************
+        ! Modules and implicit declarations
+        ! -----------------------------------------------------------------------------------
+        use GlobalSparseMatrix
+        implicit none
+
+        ! Input variables
+        ! -----------------------------------------------------------------------------------
+        class(ClassMultiscaleBoundaryConditionsPeriodic)  :: this
+        integer , dimension(:) , intent(in) :: Presc_Disp_DOF
+        integer , dimension(:) :: PrescDispSparseMapZERO
+        integer , dimension(:) :: PrescDispSparseMapONE
+        integer , dimension(:) :: FixedSupportSparseMapZERO
+        integer , dimension(:) :: FixedSupportSparseMapONE
+
+        ! Input/Output variables
+        ! -----------------------------------------------------------------------------------
+        real(8) , dimension(:) , intent(inout) :: R , Ubar , U
+        type(ClassGlobalSparseMatrix) :: Kg
+
+        ! Internal variables
+        ! -----------------------------------------------------------------------------------
+        integer :: i , n , dof
+        real(8) :: penaliza
+        real(8) , allocatable, dimension(:) ::  Udirichlet, Rmod
+
+        !************************************************************************************
+
+        !************************************************************************************
+        ! APPLYING BOUNDARY CONDITIONS
+        !************************************************************************************
+
+        allocate( Udirichlet(size(U)), Rmod(size(U)) )
+        Udirichlet = 0.0d0
+        Rmod = 0.0d0
+
+        ! Applying prescribed boundary conditions
+        if ( size(Presc_Disp_DOF) .ne. 0 ) then
+
+            ! Loop over the prescribed degrees of freedom
+            do n=1,size(Presc_Disp_DOF)
+                dof=Presc_Disp_DOF(n)
+                ! Assembly the Dirichlet displacement BC
+                Udirichlet(dof) = ( Ubar(dof) - U(dof) )
+            enddo
+
+            ! Multiplicação esparsa - Vetor Força para montagem da condição de contorno de rearranjo
+            !call mkl_dcsrgemv('N', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
+            call mkl_dcsrsymv('U', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
+
+            !Resíduo Modificado
+            R = R - Rmod
+
+            ! Corrigindo resíduo por rearranjo de equações
+            !R(Presc_Disp_DOF) = Udirichlet(Presc_Disp_DOF)
+
+            !**************************************************************
+
+        end if
+
+        ! Applying homogeneous boundary conditions (fixed supports)
+        if ( size(this%FixedSupport%dof) .ne. 0 ) then
+
+            !**************************************************************
+            ! Zerando linhas e colunas
+            Kg%Val(FixedSupportSparseMapZERO) = 0.0d0
+
+            ! Adicionando 1 na diagonal principal
+            Kg%Val(FixedSupportSparseMapONE) = 1.0d0
+
+            ! Corrigindo resíduo por rearranjo de equações
+            R(this%FixedSupport%dof) = 0.0d0
+
+            !**************************************************************
+        end if
+
+        !************************************************************************************
+
+    end subroutine
+!=================================================================================================
+    
+    
+    
     !=================================================================================================
         subroutine ApplyBoundaryConditionsMultiscaleMinimalLinearD1(this, Kg , R , Presc_Disp_DOF , Ubar , U , PrescDispSparseMapZERO, PrescDispSparseMapONE, FixedSupportSparseMapZERO, FixedSupportSparseMapONE )
 

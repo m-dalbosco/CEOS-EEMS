@@ -1414,7 +1414,7 @@ module FEMAnalysis
             real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged, XGuess, X
             real(8) :: DeltaTime , Time_alpha0
             real(8) :: alpha, alpha_max, alpha_min, alpha_aux
-            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, nDOFRed
+            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, nDOFRed, dof, n
             real(8), parameter :: GR= (1.0d0 + dsqrt(5.0d0))/2.0d0
 
             integer, allocatable, dimension(:) :: KgValZERO, KgValONE
@@ -1454,9 +1454,12 @@ module FEMAnalysis
             FEMSoE%KgRed%RowMap = 0.0d0
             FEMSoE%KgRed%Val = 0.0d0
             FEMSoE%KgRed%Col = 0.0d0
+            
+            write(*,*) ''
+            write(*,*) 'Building periodicity matrix...'
             call FEMSoE%BuildT(nDOFRed)
-            
-            
+            write(*,*) 'Done!'
+            write(*,*)            
 
             allocate(X(nDOFRed),XGuess(nDOFRed))
             
@@ -1487,6 +1490,10 @@ module FEMAnalysis
 
                     call BC%GetBoundaryConditions(AnalysisSettings, LC, ST, Fext_alpha0, DeltaFext,FEMSoE%DispDOF, U, DeltaUPresc)
 
+                    !allocate(BC%FixedSupport%dof(3))
+                    !BC%FixedSupport%dof(1)=40
+                    !BC%FixedSupport%dof(2)=41
+                    !BC%FixedSupport%dof(3)=42
                     
                     ! Mapeando os graus de liberdade da matrix esparsa para a aplicação
                     ! da CC de deslocamento prescrito
@@ -1501,7 +1508,7 @@ module FEMAnalysis
 
                         FEMSoE%PrescDispSparseMapZERO(:) = KgValZERO(1:contZERO)
                         FEMSoE%PrescDispSparseMapONE(:) = KgValONE(1:contONE)
-
+                        
                         call BC%AllocateFixedSupportSparseMapping(FEMSoE%Kg, KgValZERO, KgValONE, contZERO, contONE)
 
                         allocate( FEMSoE%FixedSupportSparseMapZERO(contZERO), FEMSoE%FixedSupportSparseMapONE(contONE) )
@@ -1546,6 +1553,15 @@ module FEMAnalysis
                         !Retrieves full fluctuation vector from the reduced vector X
                         U = 0.0d0
                         call mkl_dcsrgemv('N', nDOF, FEMSoE%TMat%Val, FEMSoE%TMat%RowMap, FEMSoE%TMat%Col, X, U)
+                        
+                        ! Loop over the prescribed degrees of freedom
+                        !do n=1,size(FEMSoE%DispDOF)
+                        !    dof=FEMSoE%DispDOF(n)
+                            ! Sum the Dirichlet displacement BC
+                        !    U(dof) = U(dof)+alpha*DeltaUPresc 
+                        !enddo
+                        
+                        !U = U+alpha*DeltaUPresc
 
                         IF (NLSolver%Status%Error) then
 

@@ -6,6 +6,7 @@ module ModMultiscalePeriodicFEMSoE
     use ElementLibrary
     use GlobalSparseMatrix
     use SparseMatrixRoutines
+    use MathRoutines
 
     implicit none
 
@@ -110,6 +111,9 @@ module ModMultiscalePeriodicFEMSoE
         RFull = 0.0d0
         call mkl_dcsrgemv('N', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, X, XFull) !Calculate XFull from X (red)
         call mkl_dcsrgemv('N', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, R, RFull) !Calculate RFull from R (red)
+        
+        !call mkl_dcsrmv('N', nDOF, nDOF, 1.0d0, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, X, XFull) !Calculate XFull from X (red)
+        !call mkl_dcsrmv('N', nDOF, nDOF, 1.0d0, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, R, RFull) !Calculate RFull from R (red)
 
         call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
 
@@ -157,15 +161,16 @@ module ModMultiscalePeriodicFEMSoE
 !--------------------------------------------------------------------------------------------------
 
     subroutine BuildT(this,nDOFRed)
-        class(ClassMultiscalePeriodicFEMSoE)   :: this
-        type(SparseMatrix)                     :: TMatSparse
-        integer                                :: idx, i, j, k, nDOF, nDOFRed, nNod, nNodBound
-        integer                                :: nNodBX, nNodBY, nNodBZ, nNodBXY, nNodBXZ, nNodBYZ
-        integer,allocatable,dimension(:)       :: Xm, Xp, Ym, Yp, Zm, Zp, XmYm, XmZm, XmYp, XmZp, XpYm, XpZm, XpYp, XpZp, YmZm, YmZp, YpZm, YpZp
-        integer                                :: XmYmZm, XpYmZm, XmYpZm, XmYmZp, XpYpZp, XmYpZp, XpYmZp, XpYpZm
-        integer                                :: countXm, countXp, countYm, countYp, countZm, countZp
-        integer                                :: countXmYm, countXmZm, countXmYp, countXmZp, countXpYm, countXpZm, countXpYp, countXpZp, countYmZm, countYmZp, countYpZm, countYpZp
-        real(8)                                :: Xmin, Xmax, Ymin, Ymax, Zmin, Zmax
+        class(ClassMultiscalePeriodicFEMSoE) :: this
+        type(SparseMatrix)                   :: TMatSparse
+        integer                              :: idx, i, j, k, m, n, col, nDOF, nDOFRed, nNod, nNodBound, FileID_TMatFull, FileID_TMatRed
+        integer                              :: nNodBX, nNodBY, nNodBZ, nNodBXY, nNodBXZ, nNodBYZ
+        integer,allocatable,dimension(:)     :: Xm, Xp, Ym, Yp, Zm, Zp, XmYm, XmZm, XmYp, XmZp, XpYm, XpZm, XpYp, XpZp, YmZm, YmZp, YpZm, YpZp
+        integer                              :: XmYmZm, XpYmZm, XmYpZm, XmYmZp, XpYpZp, XmYpZp, XpYmZp, XpYpZm
+        integer                              :: countXm, countXp, countYm, countYp, countZm, countZp
+        integer                              :: countXmYm, countXmZm, countXmYp, countXmZp, countXpYm, countXpZm, countXpYp, countXpZp, countYmZm, countYmZp, countYpZm, countYpZp
+        real(8)                              :: Xmin, Xmax, Ymin, Ymax, Zmin, Zmax
+        integer,allocatable,dimension(:,:)   :: TMatFull, TMatRed
         
         
         nNod = size(this%GlobalNodesList)
@@ -480,8 +485,250 @@ module ModMultiscalePeriodicFEMSoE
         
         nDOFRed = nDOF - 3*(nNodBX+nNodBY+nNodBZ+(3*nNodBXY)+(3*nNodBXZ)+(3*nNodBYZ)+7)
         
+        !!TO DO!!
+        !Implement routine SparseMatrixNSInit (initialize non-square sparse matrix)
+        !Assemble TMat
+        !Modify application of boundary conditions (do not delete lines and columns from prescribed displacements, find centroid node, fixed support on centroid node)
+        !Remember to sum fluctuations and prescribed displacements! (ModFEMAnalysis.90)
+        
+        allocate(TMatFull(nDOF,nDOF))
+        
+        TMatFull = 0.0d0
+        
+        do i=1,nDOF
+            TMatFull(i,i)=1
+        enddo
+                
+        !Impose free DOF of vertex XmYmZm
+        TMatFull(3*XmYmZm-2,3*XmYmZm-2)=1
+        TMatFull(3*XmYmZm-1,3*XmYmZm-1)=1
+        TMatFull(3*XmYmZm,3*XmYmZm)=1
+        !Impose periodicity on the remaining vertices
+        TMatFull(3*XpYmZm-2,3*XmYmZm-2)=1
+        TMatFull(3*XpYmZm-1,3*XmYmZm-1)=1
+        TMatFull(3*XpYmZm,3*XmYmZm)=1
+        TMatFull(3*XpYmZm-2,3*XpYmZm-2)=0
+        TMatFull(3*XpYmZm-1,3*XpYmZm-1)=0
+        TMatFull(3*XpYmZm,3*XpYmZm)=0
+        TMatFull(3*XmYpZm-2,3*XmYmZm-2)=1
+        TMatFull(3*XmYpZm-1,3*XmYmZm-1)=1
+        TMatFull(3*XmYpZm,3*XmYmZm)=1
+        TMatFull(3*XmYpZm-2,3*XmYpZm-2)=0
+        TMatFull(3*XmYpZm-1,3*XmYpZm-1)=0
+        TMatFull(3*XmYpZm,3*XmYpZm)=0
+        TMatFull(3*XmYmZp-2,3*XmYmZm-2)=1
+        TMatFull(3*XmYmZp-1,3*XmYmZm-1)=1
+        TMatFull(3*XmYmZp,3*XmYmZm)=1
+        TMatFull(3*XmYmZp-2,3*XmYmZp-2)=0
+        TMatFull(3*XmYmZp-1,3*XmYmZp-1)=0
+        TMatFull(3*XmYmZp,3*XmYmZp)=0
+        TMatFull(3*XpYpZp-2,3*XmYmZm-2)=1
+        TMatFull(3*XpYpZp-1,3*XmYmZm-1)=1
+        TMatFull(3*XpYpZp,3*XmYmZm)=1
+        TMatFull(3*XpYpZp-2,3*XpYpZp-2)=0
+        TMatFull(3*XpYpZp-1,3*XpYpZp-1)=0
+        TMatFull(3*XpYpZp,3*XpYpZp)=0
+        TMatFull(3*XmYpZp-2,3*XmYmZm-2)=1
+        TMatFull(3*XmYpZp-1,3*XmYmZm-1)=1
+        TMatFull(3*XmYpZp,3*XmYmZm)=1
+        TMatFull(3*XmYpZp-2,3*XmYpZp-2)=0
+        TMatFull(3*XmYpZp-1,3*XmYpZp-1)=0
+        TMatFull(3*XmYpZp,3*XmYpZp)=0
+        TMatFull(3*XpYmZp-2,3*XmYmZm-2)=1
+        TMatFull(3*XpYmZp-1,3*XmYmZm-1)=1
+        TMatFull(3*XpYmZp,3*XmYmZm)=1
+        TMatFull(3*XpYmZp-2,3*XpYmZp-2)=0
+        TMatFull(3*XpYmZp-1,3*XpYmZp-1)=0
+        TMatFull(3*XpYmZp,3*XpYmZp)=0
+        TMatFull(3*XpYpZm-2,3*XmYmZm-2)=1
+        TMatFull(3*XpYpZm-1,3*XmYmZm-1)=1
+        TMatFull(3*XpYpZm,3*XmYmZm)=1
+        TMatFull(3*XpYpZm-2,3*XpYpZm-2)=0
+        TMatFull(3*XpYpZm-1,3*XpYpZm-1)=0
+        TMatFull(3*XpYpZm,3*XpYpZm)=0
+        
+        !Periodicity of XY edges
+        do m=1,nNodBXY
+            !Find periodic nodes in XmYp, XpYp, XpYm and imposes periodicity
+            do n=1,nNodBXY
+                if (abs(this%GlobalNodesList(XmYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<1.0D-12) then
+                    TMatFull(3*XmYp(n)-2,3*XmYm(m)-2)=1
+                    TMatFull(3*XmYp(n)-1,3*XmYm(m)-1)=1
+                    TMatFull(3*XmYp(n),3*XmYm(m))=1
+                    TMatFull(3*XmYp(n)-2,3*XmYp(n)-2)=0
+                    TMatFull(3*XmYp(n)-1,3*XmYp(n)-1)=0
+                    TMatFull(3*XmYp(n),3*XmYp(n))=0
+                endif
+                if (abs(this%GlobalNodesList(XpYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<1.0D-12) then
+                    TMatFull(3*XpYp(n)-2,3*XmYm(m)-2)=1
+                    TMatFull(3*XpYp(n)-1,3*XmYm(m)-1)=1
+                    TMatFull(3*XpYp(n),3*XmYm(m))=1
+                    TMatFull(3*XpYp(n)-2,3*XpYp(n)-2)=0
+                    TMatFull(3*XpYp(n)-1,3*XpYp(n)-1)=0
+                    TMatFull(3*XpYp(n),3*XpYp(n))=0
+                endif
+                if (abs(this%GlobalNodesList(XpYm(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<1.0D-12) then
+                    TMatFull(3*XpYm(n)-2,3*XmYm(m)-2)=1
+                    TMatFull(3*XpYm(n)-1,3*XmYm(m)-1)=1
+                    TMatFull(3*XpYm(n),3*XmYm(m))=1
+                    TMatFull(3*XpYm(n)-2,3*XpYm(n)-2)=0
+                    TMatFull(3*XpYm(n)-1,3*XpYm(n)-1)=0
+                    TMatFull(3*XpYm(n),3*XpYm(n))=0
+                endif
+            enddo
+        enddo
+        
+        !Periodicity of XZ edges
+        do m=1,nNodBXZ
+            !Find periodic nodes in XmZp, XpZp, XpZm and imposes periodicity
+            do n=1,nNodBXZ
+                if (abs(this%GlobalNodesList(XmZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<1.0D-12) then
+                    TMatFull(3*XmZp(n)-2,3*XmZm(m)-2)=1
+                    TMatFull(3*XmZp(n)-1,3*XmZm(m)-1)=1
+                    TMatFull(3*XmZp(n),3*XmZm(m))=1
+                    TMatFull(3*XmZp(n)-2,3*XmZp(n)-2)=0
+                    TMatFull(3*XmZp(n)-1,3*XmZp(n)-1)=0
+                    TMatFull(3*XmZp(n),3*XmZp(n))=0
+                endif
+                if (abs(this%GlobalNodesList(XpZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<1.0D-12) then
+                    TMatFull(3*XpZp(n)-2,3*XmZm(m)-2)=1
+                    TMatFull(3*XpZp(n)-1,3*XmZm(m)-1)=1
+                    TMatFull(3*XpZp(n),3*XmZm(m))=1
+                    TMatFull(3*XpZp(n)-2,3*XpZp(n)-2)=0
+                    TMatFull(3*XpZp(n)-1,3*XpZp(n)-1)=0
+                    TMatFull(3*XpZp(n),3*XpZp(n))=0
+                endif
+                if (abs(this%GlobalNodesList(XpZm(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<1.0D-12) then
+                    TMatFull(3*XpZm(n)-2,3*XmZm(m)-2)=1
+                    TMatFull(3*XpZm(n)-1,3*XmZm(m)-1)=1
+                    TMatFull(3*XpZm(n),3*XmZm(m))=1
+                    TMatFull(3*XpZm(n)-2,3*XpZm(n)-2)=0
+                    TMatFull(3*XpZm(n)-1,3*XpZm(n)-1)=0
+                    TMatFull(3*XpZm(n),3*XpZm(n))=0
+                endif
+            enddo
+        enddo
+        
+        !Periodicity of YZ edges
+        do m=1,nNodBYZ
+            !Find periodic nodes in XmZp, XpZp, XpZm and imposes periodicity
+            do n=1,nNodBYZ
+                if (abs(this%GlobalNodesList(YmZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<1.0D-12) then
+                    TMatFull(3*YmZp(n)-2,3*YmZm(m)-2)=1
+                    TMatFull(3*YmZp(n)-1,3*YmZm(m)-1)=1
+                    TMatFull(3*YmZp(n),3*YmZm(m))=1
+                    TMatFull(3*YmZp(n)-2,3*YmZp(n)-2)=0
+                    TMatFull(3*YmZp(n)-1,3*YmZp(n)-1)=0
+                    TMatFull(3*YmZp(n),3*YmZp(n))=0
+                endif
+                if (abs(this%GlobalNodesList(YpZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<1.0D-12) then
+                    TMatFull(3*YpZp(n)-2,3*YmZm(m)-2)=1
+                    TMatFull(3*YpZp(n)-1,3*YmZm(m)-1)=1
+                    TMatFull(3*YpZp(n),3*YmZm(m))=1
+                    TMatFull(3*YpZp(n)-2,3*YpZp(n)-2)=0
+                    TMatFull(3*YpZp(n)-1,3*YpZp(n)-1)=0
+                    TMatFull(3*YpZp(n),3*YpZp(n))=0
+                endif
+                if (abs(this%GlobalNodesList(YpZm(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<1.0D-12) then
+                    TMatFull(3*YpZm(n)-2,3*YmZm(m)-2)=1
+                    TMatFull(3*YpZm(n)-1,3*YmZm(m)-1)=1
+                    TMatFull(3*YpZm(n),3*YmZm(m))=1
+                    TMatFull(3*YpZm(n)-2,3*YpZm(n)-2)=0
+                    TMatFull(3*YpZm(n)-1,3*YpZm(n)-1)=0
+                    TMatFull(3*YpZm(n),3*YpZm(n))=0
+                endif
+            enddo
+        enddo
+        
+        !Periodicity of X face
+        do m=1,nNodBX
+            !Find periodic nodes in Xp and imposes periodicity
+            do n=1,nNodBX
+                if ((abs(this%GlobalNodesList(Xp(n))%CoordX(2) - this%GlobalNodesList(Xm(m))%CoordX(2))<1.0D-12) .AND. (abs(this%GlobalNodesList(Xp(n))%CoordX(3) - this%GlobalNodesList(Xm(m))%CoordX(3))<1.0D-12)) then
+                    TMatFull(3*Xp(n)-2,3*Xm(m)-2)=1
+                    TMatFull(3*Xp(n)-1,3*Xm(m)-1)=1
+                    TMatFull(3*Xp(n),3*Xm(m))=1
+                    TMatFull(3*Xp(n)-2,3*Xp(n)-2)=0
+                    TMatFull(3*Xp(n)-1,3*Xp(n)-1)=0
+                    TMatFull(3*Xp(n),3*Xp(n))=0
+                endif
+            enddo
+        enddo
+        
+        !Periodicity of Y face
+        do m=1,nNodBY
+            !Find periodic nodes in Yp and imposes periodicity
+            do n=1,nNodBY
+                if ((abs(this%GlobalNodesList(Yp(n))%CoordX(1) - this%GlobalNodesList(Ym(m))%CoordX(1))<1.0D-12) .AND. (abs(this%GlobalNodesList(Yp(n))%CoordX(3) - this%GlobalNodesList(Ym(m))%CoordX(3))<1.0D-12)) then
+                    TMatFull(3*Yp(n)-2,3*Ym(m)-2)=1
+                    TMatFull(3*Yp(n)-1,3*Ym(m)-1)=1
+                    TMatFull(3*Yp(n),3*Ym(m))=1
+                    TMatFull(3*Yp(n)-2,3*Yp(n)-2)=0
+                    TMatFull(3*Yp(n)-1,3*Yp(n)-1)=0
+                    TMatFull(3*Yp(n),3*Yp(n))=0
+                endif
+            enddo
+        enddo
+        
+        !Periodicity of Z face
+        do m=1,nNodBZ
+            !Finds periodic nodes in Zp and imposes periodicity
+            do n=1,nNodBZ
+                if ((abs(this%GlobalNodesList(Zp(n))%CoordX(1) - this%GlobalNodesList(Zm(m))%CoordX(1))<1.0D-12) .AND. (abs(this%GlobalNodesList(Zp(n))%CoordX(2) - this%GlobalNodesList(Zm(m))%CoordX(2))<1.0D-12)) then
+                    TMatFull(3*Zp(n)-2,3*Zm(m)-2)=1
+                    TMatFull(3*Zp(n)-1,3*Zm(m)-1)=1
+                    TMatFull(3*Zp(n),3*Zm(m))=1
+                    TMatFull(3*Zp(n)-2,3*Zp(n)-2)=0
+                    TMatFull(3*Zp(n)-1,3*Zp(n)-1)=0
+                    TMatFull(3*Zp(n),3*Zp(n))=0
+                endif
+            enddo
+        enddo
+        
+        !Print TMatFull for checking
+        !FileID_TMatFull = 73
+        !open(FileID_TMatFull,file='TMatFull.txt',status='unknown')
+        !do i=1,nDOF
+        !    write(FileID_TMatFull,23) (TMatFull(i,j), j=1,nDOF)
+        !enddo
+!23      format(81(I1,' '))
+        !close(FileID_TMatFull)
+        
+        allocate(TMatRed(nDOF,nDOFRed))
+        col = 1
+        do j=1,nDOF
+            if (maxval(TMatFull(:,j))>0) then
+                TMatRed(:,col) = TMatFull(:,j)
+                col = col+1
+            endif
+        enddo
+        
+        !Release memory
+        deallocate(TMatFull)
+        
+        !Print TMatRed for checking
+        !FileID_TMatRed = 79
+        !open(FileID_TMatRed,file='TMatRed.txt',status='unknown')
+        !do i=1,nDOF
+        !    write(FileID_TMatRed,23) (TMatRed(i,j), j=1,nDOFRed)
+        !enddo
+        !close(FileID_TMatRed)
+        
+        !call SparseMatrixNSInit(TMatSparse,nDOF,nDOFRed)
+        
         call SparseMatrixInit(TMatSparse , nDOF)
-            
+        
+        !do i=1,nDOF
+        !    do j=1,nDOFRed
+        !        if (TMatRed(i,j)>0) then
+        !            call SparseMatrixSetVal( i , j , 1.0d0 , TMatSparse )
+        !        endif
+        !    enddo
+        !enddo
+        
+        !Release memory
+        deallocate(TMatRed)
+        
         do i=1,nDOF
             do j=1,nDOF
                 if (i==j) then
@@ -489,7 +736,6 @@ module ModMultiscalePeriodicFEMSoE
                 endif
             enddo
         enddo
-        
         nDOFRed = nDOF
         
         !Converting the sparse matrix to coordinate format (used by Pardiso Sparse Solver)
