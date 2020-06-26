@@ -1457,10 +1457,14 @@ module FEMAnalysis
             
             write(*,*) ''
             write(*,*) 'Building periodicity matrix...'
-            call FEMSoE%BuildT(nDOFRed)
+            call FEMSoE%BuildT
+            FEMSoE%TMatDescr(1) = 'G'
+            FEMSoE%TMatDescr(4) = 'F'
             write(*,*) 'Done!'
             write(*,*)            
-
+            
+            nDOFRed = FEMSoE%nDOFRed
+            
             allocate(X(nDOFRed),XGuess(nDOFRed))
             
             U = 0.0d0
@@ -1546,21 +1550,14 @@ module FEMAnalysis
 
                         !Reduces XGuess to solve problem with periodic boundary conditions
                         XGuess = 0.0d0
-                        call mkl_dcsrgemv('T', nDOF, FEMSoE%TMat%Val, FEMSoE%TMat%RowMap, FEMSoE%TMat%Col, UConverged, XGuess)
+                        call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, FEMSoE%TMatDescr, FEMSoE%TMat%Val, FEMSoE%TMat%Col, FEMSoE%TMat%RowMap, FEMSoE%TMat%RowMap(2), UConverged, 0.0d0, XGuess)
                                                 
                         call NLSolver%Solve( FEMSoE , XGuess , X )
                         
                         !Retrieves full fluctuation vector from the reduced vector X
                         U = 0.0d0
-                        call mkl_dcsrgemv('N', nDOF, FEMSoE%TMat%Val, FEMSoE%TMat%RowMap, FEMSoE%TMat%Col, X, U)
-                        
-                        ! Loop over the prescribed degrees of freedom
-                        !do n=1,size(FEMSoE%DispDOF)
-                        !    dof=FEMSoE%DispDOF(n)
-                            ! Sum the Dirichlet displacement BC
-                        !    U(dof) = U(dof)+alpha*DeltaUPresc 
-                        !enddo
-                        
+                        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, FEMSoE%TMatDescr, FEMSoE%TMat%Val, FEMSoE%TMat%Col, FEMSoE%TMat%RowMap, FEMSoE%TMat%RowMap(2), X, 0.0d0, U)
+            
                         !U = U+alpha*DeltaUPresc
 
                         IF (NLSolver%Status%Error) then

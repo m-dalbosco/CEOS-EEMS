@@ -28,6 +28,8 @@ module ModMultiscalePeriodicFEMSoE
         type  (ClassGlobalSparseMatrix), pointer             :: Kg
         type  (ClassGlobalSparseMatrix), pointer             :: KgRed
         type  (ClassGlobalSparseMatrix), pointer             :: TMat
+        character(len=1),dimension(6)                        :: TMatDescr
+        integer                                              :: nDOFRed
 
 
     contains
@@ -48,14 +50,16 @@ module ModMultiscalePeriodicFEMSoE
         class(ClassMultiscalePeriodicFEMSoE) :: this
         real(8),dimension(:)                 :: X,R          !Reduced system
         real(8),allocatable,dimension(:)     :: XFull,RFull  !Full system
-        integer                              :: nDOF
+        integer                              :: nDOF, nDOFRed
         
             call this%AnalysisSettings%GetTotalNumberOfDOF(this%GlobalNodesList,nDOF)
+            
+            nDOFRed = this%nDOFRed
             
             allocate(XFull(nDOF),RFull(nDOF))
             
             XFull = 0.0d0
-            call mkl_dcsrgemv('N', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, X, XFull) !Calculate XFull from X (red)
+            call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), X, 0.0d0, XFull) !Calculate XFull from X (red)
             
             ! Update stress and internal variables
             call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, XFull, this%Status) !Solve constitutive model (full system)
@@ -78,7 +82,7 @@ module ModMultiscalePeriodicFEMSoE
             
             R = 0.0d0
             ! Calculate R (red) from RFull
-            call mkl_dcsrgemv('T', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, RFull, R)
+            call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), RFull, 0.0d0, R) !Calculate RFull from R (red)
 
     end subroutine
 
@@ -94,11 +98,13 @@ module ModMultiscalePeriodicFEMSoE
         real(8),dimension(:)                       :: X,R          !Reduced system
         real(8),allocatable,dimension(:)           :: XFull,RFull  !Full system
         real(8) :: norma
-        integer :: nDOF, info, nzmax
-             
+        integer :: nDOF, nDOFRed, info, nzmax
+                     
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
         
         allocate(XFull(nDOF),RFull(nDOF))
+        
+        nDOFRed = this%nDOFRed
 
         allocate(KgAux%RowMap(size(this%Kg%RowMap)))
         allocate(KgAux%Val(size(this%Kg%Val)))
@@ -109,12 +115,10 @@ module ModMultiscalePeriodicFEMSoE
                     
         XFull = 0.0d0
         RFull = 0.0d0
-        call mkl_dcsrgemv('N', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, X, XFull) !Calculate XFull from X (red)
-        call mkl_dcsrgemv('N', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, R, RFull) !Calculate RFull from R (red)
         
-        !call mkl_dcsrmv('N', nDOF, nDOF, 1.0d0, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, X, XFull) !Calculate XFull from X (red)
-        !call mkl_dcsrmv('N', nDOF, nDOF, 1.0d0, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, R, RFull) !Calculate RFull from R (red)
-
+        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), X, 0.0d0, XFull) !Calculate XFull from X (red)
+        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), R, 0.0d0, RFull) !Calculate RFull from R (red)
+        
         call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
 
         ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R
@@ -132,7 +136,7 @@ module ModMultiscalePeriodicFEMSoE
         
         R = 0.0d0
         ! Calculate R (red) from RFull
-        call mkl_dcsrgemv('T', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, RFull, R)
+        call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), RFull, 0.0d0, R) !Calculate RFull from R (red)
 
     end subroutine
 
@@ -150,7 +154,7 @@ module ModMultiscalePeriodicFEMSoE
         allocate(XFull(nDOF))
         
         XFull = 0.0d0
-        call mkl_dcsrgemv('N', nDOF, this%TMat%Val, this%TMat%RowMap, this%TMat%Col, X, XFull) !Calculate XFull from X (red)
+        call mkl_dcsrmv('N', nDOF, nDOF, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), X, 0.0d0, XFull) !Calculate XFull from X (red)
 
         if (this%AnalysisSettings%NLAnalysis == .true.) then
             call UpdateMeshCoordinates(this%GlobalNodesList,this%AnalysisSettings,XFull)
@@ -160,7 +164,7 @@ module ModMultiscalePeriodicFEMSoE
     
 !--------------------------------------------------------------------------------------------------
 
-    subroutine BuildT(this,nDOFRed)
+    subroutine BuildT(this)
         class(ClassMultiscalePeriodicFEMSoE) :: this
         type(SparseMatrix)                   :: TMatSparse
         integer                              :: idx, i, j, k, m, n, col, nDOF, nDOFRed, nNod, nNodBound, FileID_TMatFull, FileID_TMatRed
@@ -743,6 +747,8 @@ module ModMultiscalePeriodicFEMSoE
 
         !Releasing memory
         call SparseMatrixKill(TMatSparse)
+        
+        this%nDOFRed = nDOFRed
 
     end subroutine
 
