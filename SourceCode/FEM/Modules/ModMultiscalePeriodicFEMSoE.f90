@@ -59,7 +59,8 @@ module ModMultiscalePeriodicFEMSoE
             allocate(XFull(nDOF),RFull(nDOF))
             
             XFull = 0.0d0
-            call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), X, 0.0d0, XFull) !Calculate XFull from X (red)
+            call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) !Calculate XFull from X (red)
+            !XFull = XFull + this%Ubar
             
             ! Update stress and internal variables
             call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, XFull, this%Status) !Solve constitutive model (full system)
@@ -82,8 +83,8 @@ module ModMultiscalePeriodicFEMSoE
             
             R = 0.0d0
             ! Calculate R (red) from RFull
-            call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), RFull, 0.0d0, R) !Calculate RFull from R (red)
-
+            call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), RFull, 0.0d0, R)
+            
     end subroutine
 
 !--------------------------------------------------------------------------------------------------
@@ -98,37 +99,65 @@ module ModMultiscalePeriodicFEMSoE
         real(8),dimension(:)                       :: X,R          !Reduced system
         real(8),allocatable,dimension(:)           :: XFull,RFull  !Full system
         real(8) :: norma
-        integer :: nDOF, nDOFRed, info, nzmax
+        integer :: nDOF, nDOFRed, info, nzmax, ValDum, ColDum, LengthKgAuxVal, LengthKgRedVal
                      
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
         
         allocate(XFull(nDOF),RFull(nDOF))
-        
-        nDOFRed = this%nDOFRed
-
-        allocate(KgAux%RowMap(size(this%Kg%RowMap)))
-        allocate(KgAux%Val(size(this%Kg%Val)))
-        allocate(KgAux%Col(size(this%Kg%Col)))
-        KgAux%RowMap = 0.0d0
-        KgAux%Val = 0.0d0
-        KgAux%Col = 0.0d0
-                    
         XFull = 0.0d0
         RFull = 0.0d0
         
-        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), X, 0.0d0, XFull) !Calculate XFull from X (red)
-        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), R, 0.0d0, RFull) !Calculate RFull from R (red)
+        nDOFRed = this%nDOFRed
+        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) !Calculate XFull from X (red)
+        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), R, 0.0d0, RFull) !Calculate RFull from R (red)
+        !XFull = XFull + this%Ubar
         
         call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
+        !Print for checking
+        call OutputSparseMatrix(this%Kg,'Kg.txt',nDOF,nDOF)        
 
         ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R
         RFull = -RFull
         call this%BC%ApplyBoundaryConditionsNEW( this%Kg , RFull , this%DispDOF, this%Ubar , XFull, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
         RFull = -RFull
         
-        nzmax = nDOF*nDOF
-        call mkl_dcsrmultcsr('T', 0, 0, nDOF, nDOF, nDOF, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%Kg%Val, this%Kg%Col, this%Kg%RowMap, KgAux%Val, KgAux%Col, KgAux%RowMap, nzmax, info)
-        call mkl_dcsrmultcsr('N', 0, 0, nDOF, nDOF, nDOF, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%KgRed%Val, this%KgRed%Col, this%KgRed%RowMap, nzmax, info)
+        
+        allocate(KgAux%RowMap(nDOFRed+1))
+        if (associated(this%KgRed%RowMap)) then
+            deallocate(this%KgRed%RowMap)
+        endif
+        if (associated(this%KgRed%Val)) then
+            deallocate(this%KgRed%Val)
+        endif
+        if (associated(this%KgRed%Col)) then
+            deallocate(this%KgRed%Col)
+        endif
+               
+        nzmax = nDOF*nDOFRed
+        !Calculate length of KgAux = Tmat'*Kg
+        call mkl_dcsrmultcsr('T', 1, 0, nDOF, nDOFRed, nDOF, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%Kg%Val, this%Kg%Col, this%Kg%RowMap, ValDum, ColDum, KgAux%RowMap, nzmax, info)
+        LengthKgAuxVal = KgAux%RowMap(nDOFRed+1)-1
+        allocate(KgAux%Val(LengthKgAuxVal))
+        allocate(KgAux%Col(LengthKgAuxVal))
+        KgAux%Val = 0.0d0
+        KgAux%Col = 0
+        !Calculate KgAux = Tmat'*Kg
+        call mkl_dcsrmultcsr('T', 2, 0, nDOF, nDOFRed, nDOF, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%Kg%Val, this%Kg%Col, this%Kg%RowMap, KgAux%Val, KgAux%Col, KgAux%RowMap, nzmax, info)
+        !Print for checking
+        call OutputSparseMatrix(KgAux,'KgAux.txt',nDOFRed,nDOF)
+        
+        allocate(this%KgRed%RowMap(nDOFRed+1))
+        !Calculate length of KgRed = KgAux*TMat
+        call mkl_dcsrmultcsr('N', 1, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, ValDum, ColDum, this%KgRed%RowMap, nzmax, info)
+        LengthKgRedVal = this%KgRed%RowMap(nDOFRed+1)-1
+        allocate(this%KgRed%Val(LengthKgRedVal))
+        allocate(this%KgRed%Col(LengthKgRedVal))
+        this%KgRed%Val = 0.0d0
+        this%KgRed%Col = 0
+        !Calculate KgRed = KgAux*TMat
+        call mkl_dcsrmultcsr('N', 2, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%KgRed%Val, this%KgRed%Col, this%KgRed%RowMap, nzmax, info)
+        !Print for checking
+        call OutputSparseMatrix(this%KgRed,'KgRed.txt',nDOFRed,nDOFRed)
         
         G => this%KgRed
         
@@ -136,7 +165,7 @@ module ModMultiscalePeriodicFEMSoE
         
         R = 0.0d0
         ! Calculate R (red) from RFull
-        call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), RFull, 0.0d0, R) !Calculate RFull from R (red)
+        call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), RFull, 0.0d0, R)
 
     end subroutine
 
@@ -488,13 +517,7 @@ module ModMultiscalePeriodicFEMSoE
         call this%AnalysisSettings%GetTotalNumberOfDOF(this%GlobalNodesList, nDOF)
         
         nDOFRed = nDOF - 3*(nNodBX+nNodBY+nNodBZ+(3*nNodBXY)+(3*nNodBXZ)+(3*nNodBYZ)+7)
-        
-        !!TO DO!!
-        !Implement routine SparseMatrixNSInit (initialize non-square sparse matrix)
-        !Assemble TMat
-        !Modify application of boundary conditions (do not delete lines and columns from prescribed displacements, find centroid node, fixed support on centroid node)
-        !Remember to sum fluctuations and prescribed displacements! (ModFEMAnalysis.90)
-        
+
         allocate(TMatFull(nDOF,nDOF))
         
         TMatFull = 0.0d0
@@ -688,16 +711,7 @@ module ModMultiscalePeriodicFEMSoE
                 endif
             enddo
         enddo
-        
-        !Print TMatFull for checking
-        !FileID_TMatFull = 73
-        !open(FileID_TMatFull,file='TMatFull.txt',status='unknown')
-        !do i=1,nDOF
-        !    write(FileID_TMatFull,23) (TMatFull(i,j), j=1,nDOF)
-        !enddo
-!23      format(81(I1,' '))
-        !close(FileID_TMatFull)
-        
+
         allocate(TMatRed(nDOF,nDOFRed))
         col = 1
         do j=1,nDOF
@@ -707,18 +721,9 @@ module ModMultiscalePeriodicFEMSoE
             endif
         enddo
         
-        !Release memory
+        !Output matrix and release memory
+        call OutputIntMatrix(TMatFull,'TMatFull.txt')
         deallocate(TMatFull)
-        
-        !Print TMatRed for checking
-        !FileID_TMatRed = 79
-        !open(FileID_TMatRed,file='TMatRed.txt',status='unknown')
-        !do i=1,nDOF
-        !    write(FileID_TMatRed,23) (TMatRed(i,j), j=1,nDOFRed)
-        !enddo
-        !close(FileID_TMatRed)
-        
-        !call SparseMatrixNSInit(TMatSparse,nDOF,nDOFRed)
         
         call SparseMatrixInit(TMatSparse , nDOF)
         
@@ -730,9 +735,7 @@ module ModMultiscalePeriodicFEMSoE
         !    enddo
         !enddo
         
-        !Release memory
-        deallocate(TMatRed)
-        
+        !Identity
         do i=1,nDOF
             do j=1,nDOF
                 if (i==j) then
@@ -742,19 +745,111 @@ module ModMultiscalePeriodicFEMSoE
         enddo
         nDOFRed = nDOF
         
+        !Output matrix and release memory
+        call OutputIntMatrix(TMatRed,'TMatRed.txt')
+        deallocate(TMatRed)
+
         !Converting the sparse matrix to coordinate format (used by Pardiso Sparse Solver)
         call ConvertToCoordinateFormat( TMatSparse , this%TMat%Row , this%TMat%Col , this%TMat%Val , this%TMat%RowMap)
 
-        !Releasing memory
+        !Output matrix and release memory
+        call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
         call SparseMatrixKill(TMatSparse)
         
         this%nDOFRed = nDOFRed
-
+        
     end subroutine
 
 
+    !---------------------------------------------------------------------------------------------------------------------
+    
+    subroutine OutputIntMatrix(Mat,filename)
+        integer,allocatable,dimension(:,:) :: Mat        
+        character(len=*)                   :: filename
+        character(len=30)                  :: Form
+        integer                            :: nLin, nCol, FileID, i, j
 
+        nLin = size(Mat,1)
+        nCol = size(Mat,2)
+        
+        if (nCol == 24) then
+            Form = '24(1X,I1)'
+        elseif (nCol == 81) then
+            Form = '81(1X,I1)'
+        elseif (nCol == 192) then
+            Form = '192(1X,I1)'
+        elseif (nCol == 375) then
+            Form = '375(1X,I1)'
+        endif
+                
+        FileID = 73
+        open(FileID,file=filename,status='unknown')
+        do i=1,nLin
+            write(FileID,'('//trim(Form)//')') (Mat(i,j), j=1,nCol)
+        enddo
+        close(FileID)
+        
+    end subroutine
+    
+    !---------------------------------------------------------------------------------------------------------------------
+    
+    subroutine OutputRealMatrix(Mat,filename)
+        real(8),allocatable,dimension(:,:) :: Mat        
+        character(len=*)                   :: filename
+        character(len=30)                  :: Form
+        integer                            :: nLin, nCol, FileID, i, j
 
+        nLin = size(Mat,1)
+        nCol = size(Mat,2)
+        
+        if (nCol == 24) then
+            Form = '24(1X,E16.9)'
+        elseif (nCol == 81) then
+            Form = '81(1X,E16.9)'
+        elseif (nCol == 192) then
+            Form = '192(1X,E16.9)'
+        elseif (nCol == 375) then
+            Form = '375(1X,E16.9)'
+        endif
+                
+        FileID = 37
+        open(FileID,file=filename,status='unknown')
+        do i=1,nLin
+            write(FileID,'('//trim(Form)//')') (Mat(i,j), j=1,nCol)
+        enddo
+        close(FileID)
+        
+    end subroutine
+    
+    !---------------------------------------------------------------------------------------------------------------------
+    
+    subroutine OutputSparseMatrix(Mat,filename,nLin,nCol)
+        type(ClassGlobalSparseMatrix)      :: Mat
+        character(len=*)                   :: filename
+        integer                            :: i, j, nLin, nCol, nVals, FileID
+        real(8),allocatable,dimension(:,:) :: MatFull
+        real(8),allocatable,dimension(:)   :: Vals
+        integer,allocatable,dimension(:)   :: Cols
+        
+        allocate(MatFull(nLin,nCol))
+        MatFull = 0.0d0
+        do i=1,nLin
+            nVals = size(Mat%Val(Mat%RowMap(i):(Mat%RowMap(i+1)-1)))
+            allocate(Vals(nVals),Cols(nVals))
+            Vals = Mat%Val(Mat%RowMap(i):(Mat%RowMap(i+1)-1))
+            Cols = Mat%Col(Mat%RowMap(i):(Mat%RowMap(i+1)-1))
+            do j=1,nVals
+                MatFull(i,Cols(j)) = Vals(j)
+            enddo
+            deallocate(Vals,Cols)
+        enddo
+        
+        call OutputRealMatrix(MatFull,filename)
+        deallocate(MatFull)
+        
+    end subroutine
+    
+    
 
 end module
 
