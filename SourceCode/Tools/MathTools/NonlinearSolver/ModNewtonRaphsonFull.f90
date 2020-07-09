@@ -136,14 +136,31 @@ contains
                 case (NewtonRaphsonFull_MatrixTypes%Sparse)
                     call this%LinearSolver%Solve(GSparse, -R, DX)
                 case default
-            end select
+                end select
 
             !if (this%LinearSolver%status%error) then
             !    call this%Status%SetError(NewtonRaphsonFull_Errors%LinearSystemError,'Error Solving Linear System')
             !    return
             !endif
             !---------------------------------------------------------------------------------------------------------------
+                
+            !---------------------------------------------------------------------------------------------------------------
+            ! Expanding reduced fluctuations (Periodic model)
+            !---------------------------------------------------------------------------------------------------------------
 
+                if (SOE%AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
+                    
+                    if (norm(X-XGuess)<1.0D-12) then
+                        DX = DX + (SOE%Ubar - XGuess) !MULTIPLICAR DX POR T
+                    else
+                        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, FEMSoE%TMatDescr, FEMSoE%TMat%Val, FEMSoE%TMat%Col, FEMSoE%TMat%RowMap(1:(size(FEMSoE%TMat%RowMap)-1)), FEMSoE%TMat%RowMap(2:size(FEMSoE%TMat%RowMap)), DXFull, 0.0d0, DX)
+                        DX = DXFull
+                    endif
+                    
+                endif
+                
+                
+                
             !---------------------------------------------------------------------------------------------------------------
             ! Update Unknown Variable and Additional Variables
             !---------------------------------------------------------------------------------------------------------------

@@ -115,8 +115,8 @@ program MAIN
                 !call Analysis%AllocateKgSparse
                 call Analysis%AllocateKgSparseUpperTriangular
             elseif (Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
-                call Analysis%AllocateKgSparseUpperTriangular
-                !call Analysis%AllocateKgSparse
+                !call Analysis%AllocateKgSparseUpperTriangular
+                call Analysis%AllocateKgSparse
                 allocate(Analysis%KgRed)
             elseif (Analysis%AnalysisSettings%MultiscaleModel == MultiscaleModels%Minimal) then
                 !call Analysis%AllocateKgSparseMultiscaleMinimal

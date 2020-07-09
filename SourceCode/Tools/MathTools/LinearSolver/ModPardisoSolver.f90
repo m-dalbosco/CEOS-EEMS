@@ -130,7 +130,7 @@ module PardisoSolver
             !  6 complex and symmetric
             ! 11 real and nonsymmetric
             ! 13 complex and nonsymmetric
-            this%mtype = -2  !11
+            this%mtype = 11!-2  !11
 
             ! Number of equations in the sparse linear systems of equations A*X = B
             this%n = n

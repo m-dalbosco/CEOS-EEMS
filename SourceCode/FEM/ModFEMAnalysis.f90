@@ -1443,7 +1443,7 @@ module FEMAnalysis
             FEMSoE % Kg => Kg
             FEMSoE % KgRed => KgRed
             
-            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % Ubar(nDOF) )
+            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % Ubar(nDOF) , FEMSoE % UConverged(nDOF) , FEMSoE % DeltaUPresc(nDOF) )
 
             ! Allocating arrays
             allocate( DeltaFext(nDOF),   Fext_alpha0(nDOF) )
@@ -1459,7 +1459,7 @@ module FEMAnalysis
             write(*,*)            
             nDOFRed = FEMSoE%nDOFRed
             
-            allocate(X(nDOFRed),XGuess(nDOFRed))
+            allocate(X(nDOF),XGuess(nDOF))
             
             U = 0.0d0
             Ubar_alpha0 = 0.0d0
@@ -1493,28 +1493,28 @@ module FEMAnalysis
                     !-----------------------------------------------------------------------------------
                     if ( (LC == 1) .and. (ST == 1) ) then
 
-                        !allocate(BC%FixedSupport%dof(3))
-                        !nNod = size(FEMSoE%GlobalNodesList)
-                        !centr = 1;
-                        !distcentr = sqrt((FEMSoE%GlobalNodesList(centr)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(3))**2)
-                        !do i=2,nNod
-                        !    dist = sqrt((FEMSoE%GlobalNodesList(i)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(3))**2)
-                        !    if (dist < distcentr) then
-                        !        centr = i
-                        !        distcentr = dist
-                        !    endif
-                        !enddo
+                        allocate(BC%FixedSupport%dof(3))
+                        nNod = size(FEMSoE%GlobalNodesList)
+                        centr = 1;
+                        distcentr = sqrt((FEMSoE%GlobalNodesList(centr)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(3))**2)
+                        do i=2,nNod
+                            dist = sqrt((FEMSoE%GlobalNodesList(i)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(3))**2)
+                            if (dist < distcentr) then
+                                centr = i
+                                distcentr = dist
+                            endif
+                        enddo
                                                    
-                        !BC%FixedSupport%dof(1)=3*centr-2
-                        !BC%FixedSupport%dof(2)=3*centr-1
-                        !BC%FixedSupport%dof(3)=3*centr                        
+                        BC%FixedSupport%dof(1)=3*centr-2
+                        BC%FixedSupport%dof(2)=3*centr-1
+                        BC%FixedSupport%dof(3)=3*centr                        
                         
                         allocate( KgValZERO(size(FEMSoE%Kg%Val)), KgValONE(size(FEMSoE%Kg%Val)) )
 
-                        call BC%AllocatePrescDispSparseMapping(FEMSoE%Kg, FEMSoE%DispDOF, KgValZERO, KgValONE, contZERO, contONE)
-                        allocate( FEMSoE%PrescDispSparseMapZERO(contZERO), FEMSoE%PrescDispSparseMapONE(contONE) )
-                        FEMSoE%PrescDispSparseMapZERO(:) = KgValZERO(1:contZERO)
-                        FEMSoE%PrescDispSparseMapONE(:) = KgValONE(1:contONE)
+                        !call BC%AllocatePrescDispSparseMapping(FEMSoE%Kg, FEMSoE%DispDOF, KgValZERO, KgValONE, contZERO, contONE)
+                        !allocate( FEMSoE%PrescDispSparseMapZERO(contZERO), FEMSoE%PrescDispSparseMapONE(contONE) )
+                        !FEMSoE%PrescDispSparseMapZERO(:) = KgValZERO(1:contZERO)
+                        !FEMSoE%PrescDispSparseMapONE(:) = KgValONE(1:contONE)
                         
                         call BC%AllocateFixedSupportSparseMapping(FEMSoE%Kg, KgValZERO, KgValONE, contZERO, contONE)
                         allocate( FEMSoE%FixedSupportSparseMapZERO(contZERO), FEMSoE%FixedSupportSparseMapONE(contONE) )
@@ -1532,6 +1532,7 @@ module FEMAnalysis
                     ! Prescribed Incremental Displacement
                     Ubar_alpha0 = U
                     Uconverged = U
+                    FEMSoE % UConverged = UConverged
 
                     alpha_max = 1.0d0 ; alpha_min = 0.0d0
                     alpha = alpha_max
@@ -1548,18 +1549,14 @@ module FEMAnalysis
                         FEMSoE % Time = Time_alpha0 + alpha*DeltaTime
                         FEMSoE % Fext = Fext_alpha0 + alpha*DeltaFext
                         FEMSoE % Ubar = Ubar_alpha0 + alpha*DeltaUPresc
-
-                        !Reduces XGuess to solve problem with periodic boundary conditions
-                        XGuess = 0.0d0
-                        call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, FEMSoE%TMatDescr, FEMSoE%TMat%Val, FEMSoE%TMat%Col, FEMSoE%TMat%RowMap(1:(size(FEMSoE%TMat%RowMap)-1)), FEMSoE%TMat%RowMap(2:size(FEMSoE%TMat%RowMap)), UConverged, 0.0d0, XGuess)
-                                                
-                        call NLSolver%Solve( FEMSoE , XGuess , X )
+                        
+                        call NLSolver%Solve( FEMSoE , XGuess = UConverged , X )
                         
                         !Retrieves full fluctuation vector from the reduced vector X
                         U = 0.0d0
                         call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, FEMSoE%TMatDescr, FEMSoE%TMat%Val, FEMSoE%TMat%Col, FEMSoE%TMat%RowMap(1:(size(FEMSoE%TMat%RowMap)-1)), FEMSoE%TMat%RowMap(2:size(FEMSoE%TMat%RowMap)), X, 0.0d0, U)
             
-                        !U = U + FEMSoE%Ubar
+                        U = U + alpha*DeltaUPresc
 
                         IF (NLSolver%Status%Error) then
 

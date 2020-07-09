@@ -103,8 +103,8 @@ subroutine TangentStiffnessMatrix( AnalysisSettings , ElementList , nDOF, Kg )
 
                 call ElementList(e)%El%ElementStiffnessMatrix( Ke, AnalysisSettings )
 
-                 !call AssembleGlobalMatrix( GM, Ke, Kg )
-                 call AssembleGlobalMatrixUpperTriangular( GM, Ke, Kg )
+                 call AssembleGlobalMatrix( GM, Ke, Kg )
+                 !call AssembleGlobalMatrixUpperTriangular( GM, Ke, Kg )
 
             enddo
             !---------------------------------------------------------------------------------

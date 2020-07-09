@@ -12,7 +12,7 @@ module ModMultiscalePeriodicFEMSoE
 
     type , extends(ClassNonLinearSystemOfEquations) :: ClassMultiscalePeriodicFEMSoE
 
-        real(8), dimension(:), allocatable                   :: Fint , Fext , UBar
+        real(8), dimension(:), allocatable                   :: Fint , Fext , UBar, UConverged, DeltaUPresc
         real(8)                                              :: Time
         integer, dimension(:), pointer                       :: DispDOF
 
@@ -48,22 +48,10 @@ module ModMultiscalePeriodicFEMSoE
 
         use Interfaces
         class(ClassMultiscalePeriodicFEMSoE) :: this
-        real(8),dimension(:)                 :: X,R          !Reduced system
-        real(8),allocatable,dimension(:)     :: XFull,RFull  !Full system
-        integer                              :: nDOF, nDOFRed
-        
-            call this%AnalysisSettings%GetTotalNumberOfDOF(this%GlobalNodesList,nDOF)
-            
-            nDOFRed = this%nDOFRed
-            
-            allocate(XFull(nDOF),RFull(nDOF))
-            
-            XFull = 0.0d0
-            call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) !Calculate XFull from X (red)
-            !XFull = XFull + this%Ubar
+        real(8),dimension(:)                 :: X,R          
             
             ! Update stress and internal variables
-            call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, XFull, this%Status) !Solve constitutive model (full system)
+            call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, X, this%Status) !Solve constitutive model (full system)
 
             ! Constitutive Model Failed. Used for Cut Back Strategy
             if (this%Status%Error ) then
@@ -78,13 +66,6 @@ module ModMultiscalePeriodicFEMSoE
                 return
             endif
 
-            ! Residual (full system)
-            RFull = this%Fint - this%Fext
-            
-            R = 0.0d0
-            ! Calculate R (red) from RFull
-            call mkl_dcsrmv('T', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), RFull, 0.0d0, R)
-            
     end subroutine
 
 !--------------------------------------------------------------------------------------------------
@@ -96,32 +77,36 @@ module ModMultiscalePeriodicFEMSoE
         class(ClassMultiscalePeriodicFEMSoE)       :: this
         class(ClassGlobalSparseMatrix),pointer     :: G
         type(ClassGlobalSparseMatrix)              :: KgAux
-        real(8),dimension(:)                       :: X,R          !Reduced system
-        real(8),allocatable,dimension(:)           :: XFull,RFull  !Full system
+        real(8),dimension(:)                       :: X,R          !Full system
+        real(8),allocatable,dimension(:)           :: RFull,Rred  !Full system
         real(8) :: norma
         integer :: nDOF, nDOFRed, info, nzmax, ValDum, ColDum, LengthKgAuxVal, LengthKgRedVal
                      
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
         
-        allocate(XFull(nDOF),RFull(nDOF))
-        XFull = 0.0d0
-        RFull = 0.0d0
-        
         nDOFRed = this%nDOFRed
-        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) !Calculate XFull from X (red)
-        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), R, 0.0d0, RFull) !Calculate RFull from R (red)
+        
+        allocate(RFull(nDOF),Rred(nDOFRed))
+        
+        !Calculate XFull from X (red)
+        !XFull = 0.0d0
+        !call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) 
         !XFull = XFull + this%Ubar
         
         call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
         !Print for checking
-        call OutputSparseMatrix(this%Kg,'Kg.txt',nDOF,nDOF)        
+        !call OutputSparseMatrix(this%Kg,'Kg.txt',nDOF,nDOF)        
 
         ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R
+        RFull = this%Fint
+        if (norm(X-this%UConverged)<1.0D-12) then
         RFull = -RFull
-        call this%BC%ApplyBoundaryConditionsNEW( this%Kg , RFull , this%DispDOF, this%Ubar , XFull, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
+        call this%BC%ApplyBoundaryConditionsNEW( this%Kg , RFull , this%DispDOF, this%Ubar , X, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
         RFull = -RFull
-        
-        
+        else
+        call this%BC%ApplyBoundaryConditionsNEW( this%Kg , RFull , this%DispDOF, this%Ubar , this%Ubar, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
+        endif
+                
         allocate(KgAux%RowMap(nDOFRed+1))
         if (associated(this%KgRed%RowMap)) then
             deallocate(this%KgRed%RowMap)
@@ -144,7 +129,7 @@ module ModMultiscalePeriodicFEMSoE
         !Calculate KgAux = Tmat'*Kg
         call mkl_dcsrmultcsr('T', 2, 0, nDOF, nDOFRed, nDOF, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%Kg%Val, this%Kg%Col, this%Kg%RowMap, KgAux%Val, KgAux%Col, KgAux%RowMap, nzmax, info)
         !Print for checking
-        call OutputSparseMatrix(KgAux,'KgAux.txt',nDOFRed,nDOF)
+        !call OutputSparseMatrix(KgAux,'KgAux.txt',nDOFRed,nDOF)
         
         allocate(this%KgRed%RowMap(nDOFRed+1))
         !Calculate length of KgRed = KgAux*TMat
@@ -157,7 +142,7 @@ module ModMultiscalePeriodicFEMSoE
         !Calculate KgRed = KgAux*TMat
         call mkl_dcsrmultcsr('N', 2, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%KgRed%Val, this%KgRed%Col, this%KgRed%RowMap, nzmax, info)
         !Print for checking
-        call OutputSparseMatrix(this%KgRed,'KgRed.txt',nDOFRed,nDOFRed)
+        !call OutputSparseMatrix(this%KgRed,'KgRed.txt',nDOFRed,nDOFRed)
         
         G => this%KgRed
         
@@ -176,14 +161,16 @@ module ModMultiscalePeriodicFEMSoE
         class(ClassMultiscalePeriodicFEMSoE) :: this
         real(8),dimension(:)             :: X
         real(8),allocatable,dimension(:) :: XFull
-        integer                          :: nDOF
+        integer                          :: nDOF, nDOFRed
         
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
+        
+        nDOFRed = this%nDOFRed
         
         allocate(XFull(nDOF))
         
         XFull = 0.0d0
-        call mkl_dcsrmv('N', nDOF, nDOF, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%TMat%RowMap(2), X, 0.0d0, XFull) !Calculate XFull from X (red)
+        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) !Calculate XFull from X (red)
 
         if (this%AnalysisSettings%NLAnalysis == .true.) then
             call UpdateMeshCoordinates(this%GlobalNodesList,this%AnalysisSettings,XFull)
@@ -722,38 +709,38 @@ module ModMultiscalePeriodicFEMSoE
         enddo
         
         !Output matrix and release memory
-        call OutputIntMatrix(TMatFull,'TMatFull.txt')
+        !call OutputIntMatrix(TMatFull,'TMatFull.txt')
         deallocate(TMatFull)
         
         call SparseMatrixInit(TMatSparse , nDOF)
         
-        !do i=1,nDOF
-        !    do j=1,nDOFRed
-        !        if (TMatRed(i,j)>0) then
-        !            call SparseMatrixSetVal( i , j , 1.0d0 , TMatSparse )
-        !        endif
-        !    enddo
-        !enddo
-        
-        !Identity
         do i=1,nDOF
-            do j=1,nDOF
-                if (i==j) then
+            do j=1,nDOFRed
+                if (TMatRed(i,j)>0) then
                     call SparseMatrixSetVal( i , j , 1.0d0 , TMatSparse )
                 endif
             enddo
         enddo
-        nDOFRed = nDOF
+        
+        !Identity
+        !do i=1,nDOF
+        !    do j=1,nDOF
+        !        if (i==j) then
+        !            call SparseMatrixSetVal( i , j , 1.0d0 , TMatSparse )
+        !        endif
+        !    enddo
+        !enddo
+        !nDOFRed = nDOF
         
         !Output matrix and release memory
-        call OutputIntMatrix(TMatRed,'TMatRed.txt')
+        !call OutputIntMatrix(TMatRed,'TMatRed.txt')
         deallocate(TMatRed)
 
         !Converting the sparse matrix to coordinate format (used by Pardiso Sparse Solver)
         call ConvertToCoordinateFormat( TMatSparse , this%TMat%Row , this%TMat%Col , this%TMat%Val , this%TMat%RowMap)
 
         !Output matrix and release memory
-        call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
+        !call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
         call SparseMatrixKill(TMatSparse)
         
         this%nDOFRed = nDOFRed
