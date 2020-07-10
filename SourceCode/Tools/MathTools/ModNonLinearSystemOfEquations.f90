@@ -6,6 +6,7 @@ module modNonLinearSystemOfEquations
     type ClassNonLinearSystemOfEquations
 
         type(ClassStatus) :: Status
+        integer           :: it
 
     contains
 

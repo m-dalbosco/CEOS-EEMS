@@ -47,6 +47,7 @@ module BoundaryConditions
         type (ClassFixedSupport)                              :: FixedSupport
         type (ClassNodalBC),        allocatable, dimension(:) :: NodalForceBC , NodalDispBC
         type (ClassBoundaryNodes),  allocatable, dimension(:) :: BoundaryNodes
+        integer                                               :: it
 
         contains
 
@@ -171,23 +172,25 @@ module BoundaryConditions
         Udirichlet = 0.0d0
         Rmod = 0.0d0
 
-
-
         ! Applying prescribed boundary conditions
         if ( size(Presc_Disp_DOF) .ne. 0 ) then
 
-            ! Loop over the prescribed degrees of freedom
-             do n=1,size(Presc_Disp_DOF)
-                dof=Presc_Disp_DOF(n)
-                ! Assembly the Dirichlet displacement BC
-                Udirichlet(dof) = ( Ubar(dof) - U(dof) )
-            enddo
+            if (this%it==0) then
+            
+                ! Loop over the prescribed degrees of freedom
+                do n=1,size(Presc_Disp_DOF)
+                    dof=Presc_Disp_DOF(n)
+                    ! Assembly the Dirichlet displacement BC
+                    Udirichlet(dof) = ( Ubar(dof) - U(dof) )
+                enddo
 
-            ! Multiplicação esparça - Vetor Força para montagem da condição de contorno de rearranjo
-            call mkl_dcsrgemv('N', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
+                ! Multiplicação esparça - Vetor Força para montagem da condição de contorno de rearranjo
+                call mkl_dcsrgemv('N', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
 
-            !Resíduo Modificado
-            R = R - Rmod
+                !Resíduo Modificado
+                R = R - Rmod
+            
+            endif
 
             ! Loop over the prescribed degrees of freedom
              do n=1,size(Presc_Disp_DOF)
@@ -283,6 +286,8 @@ module BoundaryConditions
         ! Applying prescribed boundary conditions
         if ( size(Presc_Disp_DOF) .ne. 0 ) then
 
+            if (this%it==0) then
+            
             ! Loop over the prescribed degrees of freedom
             do n=1,size(Presc_Disp_DOF)
                 dof=Presc_Disp_DOF(n)
@@ -296,6 +301,8 @@ module BoundaryConditions
 
             !Resíduo Modificado
             R = R - Rmod
+            
+            endif
 
             !**************************************************************
             ! Zerando linhas e colunas

@@ -64,6 +64,8 @@ contains
 
 
         LOOP: do while (.true.)
+            
+            SOE%it = it
 
             !---------------------------------------------------------------------------------------------------------------
             ! Evaluating Residual - Nonlinear System of Equations
