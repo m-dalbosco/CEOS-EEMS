@@ -1033,12 +1033,12 @@ module FEMAnalysis
                             call QuasiStaticAnalysisFEM( this%ElementList, this%AnalysisSettings, this%GlobalNodesList , &
                                                          this%BC, this%Kg, this%NLSolver )
 
-                         elseif (this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
-
+                        elseif (this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
+                            
                             call this%AdditionalMaterialModelRoutine()
                             call QuasiStaticAnalysisMultiscalePeriodicFEM( this%ElementList, this%AnalysisSettings, this%GlobalNodesList , &
-                                                                          this%BC, this%Kg, this%KgRed, this%NLSolver )
-                            
+                                                         this%BC, this%Kg, this%KgRed, this%NLSolver )
+                        
                         elseif (this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Minimal) then
 
                             call this%AdditionalMaterialModelRoutine()
@@ -1371,15 +1371,15 @@ module FEMAnalysis
             !************************************************************************************
 
 
-                                           end subroutine
+        end subroutine
         !##################################################################################################
 
         !##################################################################################################
         ! This routine contains the procedures to solve a quasi-static analysis based in a incremental-
         ! iterative approach.
         !##################################################################################################
-        subroutine QuasiStaticAnalysisMultiscalePeriodicFEM( ElementList , AnalysisSettings , GlobalNodesList , BC , &
-                                                             Kg , KgRed , NLSolver )
+        subroutine QuasiStaticAnalysisMultiscalePeriodicFEM( ElementList , AnalysisSettings , GlobalNodesList , BC  , &
+                                           Kg , KgRed, NLSolver )
 
             !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -1391,7 +1391,6 @@ module FEMAnalysis
             use Nodes
             use BoundaryConditions
             use GlobalSparseMatrix
-            use SparseMatrixRoutines
             use NonLinearSolver
             use Interfaces
             use MathRoutines
@@ -1402,21 +1401,20 @@ module FEMAnalysis
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
-            type (ClassAnalysis)                                     :: AnalysisSettings
-            type (ClassElementsWrapper),     pointer, dimension(:)   :: ElementList
-            type (ClassNodes),               pointer, dimension(:)   :: GlobalNodesList
-            class (ClassBoundaryConditions), pointer                 :: BC
-            type (ClassGlobalSparseMatrix),  pointer                 :: Kg
-            type (ClassGlobalSparseMatrix),  pointer                 :: KgRed
-            class(ClassNonLinearSolver),     pointer                 :: NLSolver
+            type (ClassAnalysis)                                    :: AnalysisSettings
+            type (ClassElementsWrapper),     pointer, dimension(:)  :: ElementList
+            type (ClassNodes),               pointer, dimension(:)  :: GlobalNodesList
+            class (ClassBoundaryConditions),  pointer               :: BC
+            type (ClassGlobalSparseMatrix),  pointer                :: Kg
+            type (ClassGlobalSparseMatrix),  pointer                :: KgRed
+            class(ClassNonLinearSolver),     pointer                :: NLSolver
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            
-            real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged, XGuess, X
+            real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged
             real(8) :: DeltaTime , Time_alpha0
-            real(8) :: alpha, alpha_max, alpha_min, alpha_aux, distcentr, dist
-            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, nDOFRed, dof, n, nNod, centr, i
+            real(8) :: alpha, alpha_max, alpha_min, alpha_aux, dist, distcentr
+            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, nNod, centr, i
             real(8), parameter :: GR= (1.0d0 + dsqrt(5.0d0))/2.0d0
 
             integer, allocatable, dimension(:) :: KgValZERO, KgValONE
@@ -1442,13 +1440,16 @@ module FEMAnalysis
             FEMSoE % BC => BC
             FEMSoE % Kg => Kg
             FEMSoE % KgRed => KgRed
+
+            FEMSoE % isPeriodic = .TRUE.
             
-            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % Ubar(nDOF) , FEMSoE % UConverged(nDOF) , FEMSoE % DeltaUPresc(nDOF) )
+            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % Ubar(nDOF) , FEMSoE % UConverged(nDOF) )
+
 
             ! Allocating arrays
-            allocate( DeltaFext(nDOF),   Fext_alpha0(nDOF) )
+            allocate( R(nDOF), DeltaFext(nDOF),   Fext_alpha0(nDOF) )
             allocate( U(nDOF), DeltaUPresc(nDOF), Ubar_alpha0(nDOF), Uconverged(nDOF)  )
-            
+
             allocate(FEMSoE%TMat)
             write(*,*) ''
             write(*,*) 'Building periodicity matrix...'
@@ -1457,10 +1458,7 @@ module FEMAnalysis
             FEMSoE%TMatDescr(4) = 'F'
             write(*,*) 'Done!'
             write(*,*)            
-            nDOFRed = FEMSoE%nDOFRed
-            
-            allocate(X(nDOF),XGuess(nDOF))
-            
+
             U = 0.0d0
             Ubar_alpha0 = 0.0d0
 
@@ -1487,7 +1485,7 @@ module FEMAnalysis
                     write(*,*)''
 
                     call BC%GetBoundaryConditions(AnalysisSettings, LC, ST, Fext_alpha0, DeltaFext,FEMSoE%DispDOF, U, DeltaUPresc)
-                    
+
                     ! Mapeando os graus de liberdade da matrix esparsa para a aplicação
                     ! da CC de deslocamento prescrito
                     !-----------------------------------------------------------------------------------
@@ -1510,11 +1508,6 @@ module FEMAnalysis
                         BC%FixedSupport%dof(3)=3*centr                        
                         
                         allocate( KgValZERO(size(FEMSoE%Kg%Val)), KgValONE(size(FEMSoE%Kg%Val)) )
-
-                        !call BC%AllocatePrescDispSparseMapping(FEMSoE%Kg, FEMSoE%DispDOF, KgValZERO, KgValONE, contZERO, contONE)
-                        !allocate( FEMSoE%PrescDispSparseMapZERO(contZERO), FEMSoE%PrescDispSparseMapONE(contONE) )
-                        !FEMSoE%PrescDispSparseMapZERO(:) = KgValZERO(1:contZERO)
-                        !FEMSoE%PrescDispSparseMapONE(:) = KgValONE(1:contONE)
                         
                         call BC%AllocateFixedSupportSparseMapping(FEMSoE%Kg, KgValZERO, KgValONE, contZERO, contONE)
                         allocate( FEMSoE%FixedSupportSparseMapZERO(contZERO), FEMSoE%FixedSupportSparseMapONE(contONE) )
@@ -1549,14 +1542,9 @@ module FEMAnalysis
                         FEMSoE % Time = Time_alpha0 + alpha*DeltaTime
                         FEMSoE % Fext = Fext_alpha0 + alpha*DeltaFext
                         FEMSoE % Ubar = Ubar_alpha0 + alpha*DeltaUPresc
-                        
-                        call NLSolver%Solve( FEMSoE , XGuess = UConverged , X )
-                        
-                        !Retrieves full fluctuation vector from the reduced vector X
-                        U = 0.0d0
-                        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, FEMSoE%TMatDescr, FEMSoE%TMat%Val, FEMSoE%TMat%Col, FEMSoE%TMat%RowMap(1:(size(FEMSoE%TMat%RowMap)-1)), FEMSoE%TMat%RowMap(2:size(FEMSoE%TMat%RowMap)), X, 0.0d0, U)
-            
-                        U = U + alpha*DeltaUPresc
+
+
+                        call NLSolver%Solve( FEMSoE , XGuess = FEMSoE%Ubar , X = U )
 
                         IF (NLSolver%Status%Error) then
 

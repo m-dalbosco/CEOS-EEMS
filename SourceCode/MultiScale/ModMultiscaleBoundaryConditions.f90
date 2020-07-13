@@ -65,6 +65,16 @@ module ModMultiscaleBoundaryConditions
     !-----------------------------------------------------------------------------------
 
     !-----------------------------------------------------------------------------------
+    type, extends(ClassMultiscaleBoundaryConditions) :: ClassMultiscaleBoundaryConditionsPeriodic
+
+        contains
+            procedure :: GetBoundaryConditions => GetBoundaryConditionsMultiscalePeriodic
+            procedure :: ApplyBoundaryConditionsNEW => ApplyBoundaryConditionsMultiscalePeriodic
+        end type
+    !-----------------------------------------------------------------------------------
+        
+        
+    !-----------------------------------------------------------------------------------
     type, extends(ClassMultiscaleBoundaryConditions) :: ClassMultiscaleBoundaryConditionsMinimal
 
         contains
@@ -196,7 +206,7 @@ module ModMultiscaleBoundaryConditions
     end subroutine
     !=================================================================================================
 
-    !=================================================================================================
+!=================================================================================================
     subroutine GetBoundaryConditionsMultiscalePeriodic( this, AnalysisSettings, LC, ST, Fext, DeltaFext, NodalDispDOF, U, DeltaUPresc )
 
         !************************************************************************************
@@ -282,7 +292,8 @@ module ModMultiscaleBoundaryConditions
         !************************************************************************************
 
     end subroutine
-    !=================================================================================================
+
+    !=================================================================================================    
 
     !=================================================================================================
     subroutine GetBoundaryConditionsMultiscaleMinimal( this, AnalysisSettings, LC, ST, Fext, DeltaFext, NodalDispDOF, U, DeltaUPresc)
@@ -665,6 +676,8 @@ module ModMultiscaleBoundaryConditions
         ! Applying prescribed boundary conditions
         if ( size(Presc_Disp_DOF) .ne. 0 ) then
 
+            if (this%it==0) then
+
             ! Loop over the prescribed degrees of freedom
             do n=1,size(Presc_Disp_DOF)
                 dof=Presc_Disp_DOF(n)
@@ -673,11 +686,20 @@ module ModMultiscaleBoundaryConditions
             enddo
 
             ! Multiplicação esparsa - Vetor Força para montagem da condição de contorno de rearranjo
-            !call mkl_dcsrgemv('N', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
-            call mkl_dcsrsymv('U', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
+            call mkl_dcsrgemv('N', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
+            !call mkl_dcsrsymv('U', size(U), Kg%Val, Kg%RowMap, Kg%Col, Udirichlet, Rmod)
 
             !Resíduo Modificado
             R = R - Rmod
+            
+            endif
+
+            !**************************************************************
+            ! Zerando linhas e colunas
+            !Kg%Val(PrescDispSparseMapZERO) = 0.0d0
+            
+            ! Adicionando 1 na diagonal principal
+            !Kg%Val(PrescDispSparseMapONE) = 1.0d0
 
             ! Corrigindo resíduo por rearranjo de equações
             !R(Presc_Disp_DOF) = Udirichlet(Presc_Disp_DOF)
@@ -705,9 +727,9 @@ module ModMultiscaleBoundaryConditions
         !************************************************************************************
 
     end subroutine
-!=================================================================================================
-    
-    
+
+    !=================================================================================================
+   
     
     !=================================================================================================
         subroutine ApplyBoundaryConditionsMultiscaleMinimalLinearD1(this, Kg , R , Presc_Disp_DOF , Ubar , U , PrescDispSparseMapZERO, PrescDispSparseMapONE, FixedSupportSparseMapZERO, FixedSupportSparseMapONE )

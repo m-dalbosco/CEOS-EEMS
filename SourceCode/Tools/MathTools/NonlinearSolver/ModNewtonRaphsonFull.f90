@@ -50,7 +50,8 @@ contains
         real(8),dimension(:)          :: Xguess , X
 
         integer :: it, i
-        real(8) :: normR , R(size(X)) , DX(size(X)), norma
+        real(8) :: normR , norma
+        real(8),allocatable,dimension(:) :: R , DX, DXFull
 
         real(8),dimension(:,:),pointer :: GFull
         class(ClassGlobalSparseMatrix),pointer :: GSparse
@@ -62,8 +63,15 @@ contains
         it = 0
         X=Xguess
 
+        if (SOE%isPeriodic) then
+            allocate(R(SOE%nDOF),DX(SOE%nDOF),DXFull(size(X))) !SOE%nDOF = DOF reduced system
+        else
+            allocate(R(size(X)),DX(size(X)))
+        endif
 
         LOOP: do while (.true.)
+            
+            SOE%it = it
 
             !---------------------------------------------------------------------------------------------------------------
             ! Evaluating Residual - Nonlinear System of Equations
@@ -137,34 +145,17 @@ contains
                     call this%LinearSolver%Solve(GSparse, -R, DX)
                 case default
                 end select
-
-            !if (this%LinearSolver%status%error) then
-            !    call this%Status%SetError(NewtonRaphsonFull_Errors%LinearSystemError,'Error Solving Linear System')
-            !    return
-            !endif
-            !---------------------------------------------------------------------------------------------------------------
-                
-            !---------------------------------------------------------------------------------------------------------------
-            ! Expanding reduced fluctuations (Periodic model)
-            !---------------------------------------------------------------------------------------------------------------
-
-                if (SOE%AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
-                    
-                    if (norm(X-XGuess)<1.0D-12) then
-                        DX = DX + (SOE%Ubar - XGuess) !MULTIPLICAR DX POR T
-                    else
-                        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, FEMSoE%TMatDescr, FEMSoE%TMat%Val, FEMSoE%TMat%Col, FEMSoE%TMat%RowMap(1:(size(FEMSoE%TMat%RowMap)-1)), FEMSoE%TMat%RowMap(2:size(FEMSoE%TMat%RowMap)), DXFull, 0.0d0, DX)
-                        DX = DXFull
-                    endif
-                    
-                endif
-                
                 
                 
             !---------------------------------------------------------------------------------------------------------------
             ! Update Unknown Variable and Additional Variables
             !---------------------------------------------------------------------------------------------------------------
-            X = X + DX
+            if (SOE%isPeriodic) then
+                call SOE%ExpandResult(DX,DXFull)
+                X = X + DXFull
+            else
+                X = X + DX
+            endif
 
             call SOE%PostUpdate(X)
             !---------------------------------------------------------------------------------------------------------------

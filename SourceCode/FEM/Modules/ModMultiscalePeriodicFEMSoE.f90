@@ -12,7 +12,7 @@ module ModMultiscalePeriodicFEMSoE
 
     type , extends(ClassNonLinearSystemOfEquations) :: ClassMultiscalePeriodicFEMSoE
 
-        real(8), dimension(:), allocatable                   :: Fint , Fext , UBar, UConverged, DeltaUPresc
+        real(8), dimension(:), allocatable                   :: Fint , Fext , UBar, UConverged
         real(8)                                              :: Time
         integer, dimension(:), pointer                       :: DispDOF
 
@@ -29,7 +29,6 @@ module ModMultiscalePeriodicFEMSoE
         type  (ClassGlobalSparseMatrix), pointer             :: KgRed
         type  (ClassGlobalSparseMatrix), pointer             :: TMat
         character(len=1),dimension(6)                        :: TMatDescr
-        integer                                              :: nDOFRed
 
 
     contains
@@ -37,6 +36,7 @@ module ModMultiscalePeriodicFEMSoE
         procedure :: EvaluateSystem => EvaluateR
         procedure :: EvaluateGradientSparse => EvaluateKt
         procedure :: PostUpdate => FEMUpdateMesh
+        procedure :: ExpandResult => ExpandFluctuation
         procedure :: BuildT
 
     end type
@@ -48,18 +48,21 @@ module ModMultiscalePeriodicFEMSoE
 
         use Interfaces
         class(ClassMultiscalePeriodicFEMSoE) :: this
-        real(8),dimension(:)                 :: X,R          
-            
+        real(8),dimension(:) :: X,R
+
             ! Update stress and internal variables
-            call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, X, this%Status) !Solve constitutive model (full system)
+            if (this%it == 0) then
+                call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, this%UConverged, this%Status)
+            else
+                call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, X, this%Status)
+            endif
 
             ! Constitutive Model Failed. Used for Cut Back Strategy
             if (this%Status%Error ) then
                 return
             endif
 
-            ! Internal Force
-            call InternalForce(this%ElementList , this%AnalysisSettings , this%Fint, this%Status) !Calculate internal force (full system)
+            call InternalForce(this%ElementList , this%AnalysisSettings , this%Fint, this%Status)
 
             ! det(Jacobian Matrix)<=0 .Used for Cut Back Strategy
             if (this%Status%Error ) then
@@ -77,35 +80,25 @@ module ModMultiscalePeriodicFEMSoE
         class(ClassMultiscalePeriodicFEMSoE)       :: this
         class(ClassGlobalSparseMatrix),pointer     :: G
         type(ClassGlobalSparseMatrix)              :: KgAux
-        real(8),dimension(:)                       :: X,R          !Full system
-        real(8),allocatable,dimension(:)           :: RFull,Rred  !Full system
-        real(8) :: norma
+        real(8),dimension(:)                       :: X,R         !X = full system, R = reduced system
+        real(8),allocatable,dimension(:)           :: RFull       !Full system
         integer :: nDOF, nDOFRed, info, nzmax, ValDum, ColDum, LengthKgAuxVal, LengthKgRedVal
                      
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
-        
-        nDOFRed = this%nDOFRed
-        
-        allocate(RFull(nDOF),Rred(nDOFRed))
-        
-        !Calculate XFull from X (red)
-        !XFull = 0.0d0
-        !call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) 
-        !XFull = XFull + this%Ubar
+
+        nDOFRed = this%nDOF !DOF reduced system
+        allocate(RFull(nDOF))
         
         call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
         !Print for checking
         !call OutputSparseMatrix(this%Kg,'Kg.txt',nDOF,nDOF)        
 
-        ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R
+        this%BC%it = this%it
+        ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R!!!
         RFull = this%Fint
-        if (norm(X-this%UConverged)<1.0D-12) then
         RFull = -RFull
-        call this%BC%ApplyBoundaryConditionsNEW( this%Kg , RFull , this%DispDOF, this%Ubar , X, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
+        call this%BC%ApplyBoundaryConditionsNEW(  this%Kg , RFull , this%DispDOF, this%Ubar , this%UConverged, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
         RFull = -RFull
-        else
-        call this%BC%ApplyBoundaryConditionsNEW( this%Kg , RFull , this%DispDOF, this%Ubar , this%Ubar, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
-        endif
                 
         allocate(KgAux%RowMap(nDOFRed+1))
         if (associated(this%KgRed%RowMap)) then
@@ -159,24 +152,30 @@ module ModMultiscalePeriodicFEMSoE
     subroutine FEMUpdateMesh(this,X)
         use Interfaces
         class(ClassMultiscalePeriodicFEMSoE) :: this
-        real(8),dimension(:)             :: X
-        real(8),allocatable,dimension(:) :: XFull
-        integer                          :: nDOF, nDOFRed
-        
-        call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
-        
-        nDOFRed = this%nDOFRed
-        
-        allocate(XFull(nDOF))
-        
-        XFull = 0.0d0
-        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), X, 0.0d0, XFull) !Calculate XFull from X (red)
+        real(8),dimension(:)::X
 
         if (this%AnalysisSettings%NLAnalysis == .true.) then
-            call UpdateMeshCoordinates(this%GlobalNodesList,this%AnalysisSettings,XFull)
+            call UpdateMeshCoordinates(this%GlobalNodesList,this%AnalysisSettings,X)
         endif
 
     end subroutine
+
+!--------------------------------------------------------------------------------------------------
+    
+    subroutine ExpandFluctuation(this,Rred,Rfull)
+
+        class(ClassMultiscalePeriodicFEMSoE) :: this
+        real(8),dimension(:) :: Rred,Rfull !DX, DXFull
+        integer :: nDOF, nDOFRed
+        
+        call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
+        
+        nDOFRed = this%nDOF !DOF reduced system
+        
+        Rfull = 0.0d0
+        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), Rred, 0.0d0, Rfull) 
+
+    end subroutine    
     
 !--------------------------------------------------------------------------------------------------
 
@@ -743,7 +742,8 @@ module ModMultiscalePeriodicFEMSoE
         !call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
         call SparseMatrixKill(TMatSparse)
         
-        this%nDOFRed = nDOFRed
+        this%nDOF = nDOFRed
+
         
     end subroutine
 
@@ -835,8 +835,6 @@ module ModMultiscalePeriodicFEMSoE
         deallocate(MatFull)
         
     end subroutine
-    
-    
 
 end module
 
