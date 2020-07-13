@@ -50,7 +50,8 @@ contains
         real(8),dimension(:)          :: Xguess , X
 
         integer :: it, i
-        real(8) :: normR , R(size(X)) , DX(size(X)), norma
+        real(8) :: normR , norma
+        real(8),allocatable,dimension(:) :: R , DX
 
         real(8),dimension(:,:),pointer :: GFull
         class(ClassGlobalSparseMatrix),pointer :: GSparse
@@ -62,6 +63,7 @@ contains
         it = 0
         X=Xguess
 
+        allocate(R(size(X)),DX(size(X)))
 
         LOOP: do while (.true.)
             
@@ -139,12 +141,6 @@ contains
                     call this%LinearSolver%Solve(GSparse, -R, DX)
                 case default
             end select
-
-            !if (this%LinearSolver%status%error) then
-            !    call this%Status%SetError(NewtonRaphsonFull_Errors%LinearSystemError,'Error Solving Linear System')
-            !    return
-            !endif
-            !---------------------------------------------------------------------------------------------------------------
 
             !---------------------------------------------------------------------------------------------------------------
             ! Update Unknown Variable and Additional Variables
