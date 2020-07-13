@@ -64,7 +64,7 @@ contains
         X=Xguess
 
         if (SOE%isPeriodic) then
-            !allocate(R(SOE%nDOF),DX(SOE%nDOF),DXFull(size(X)))
+            allocate(R(SOE%nDOF),DX(SOE%nDOF),DXFull(size(X))) !SOE%nDOF = DOF reduced system
         else
             allocate(R(size(X)),DX(size(X)))
         endif
@@ -150,7 +150,8 @@ contains
             ! Update Unknown Variable and Additional Variables
             !---------------------------------------------------------------------------------------------------------------
             if (SOE%isPeriodic) then
-                !X = X + DX
+                call SOE%ExpandResult(DX,DXFull)
+                X = X + DXFull
             else
                 X = X + DX
             endif

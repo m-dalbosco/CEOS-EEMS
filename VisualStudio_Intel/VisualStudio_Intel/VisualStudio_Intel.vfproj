@@ -96,6 +96,7 @@
 		<File RelativePath="..\..\SourceCode\FEM\Modules\ModMultiscaleMinimalLinearD1FEMSoE.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\Modules\ModMultiscaleMinimalLinearD3FEMSoE.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\Modules\ModMultiscaleMinimalPhasesFEMSoE.f90"/>
+		<File RelativePath="..\..\SourceCode\FEM\Modules\ModMultiscalePeriodicFEMSoE.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\Modules\ModNodes.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\Modules\ModuleInterfaces.f90"/></Filter>
 		<Filter Name="Subroutines">

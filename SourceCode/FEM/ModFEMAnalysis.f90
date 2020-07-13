@@ -1037,7 +1037,7 @@ module FEMAnalysis
                             
                             call this%AdditionalMaterialModelRoutine()
                             call QuasiStaticAnalysisMultiscalePeriodicFEM( this%ElementList, this%AnalysisSettings, this%GlobalNodesList , &
-                                                         this%BC, this%Kg, this%NLSolver )
+                                                         this%BC, this%Kg, this%KgRed, this%NLSolver )
                         
                         elseif (this%AnalysisSettings%MultiscaleModel == MultiscaleModels%Minimal) then
 
@@ -1379,7 +1379,7 @@ module FEMAnalysis
         ! iterative approach.
         !##################################################################################################
         subroutine QuasiStaticAnalysisMultiscalePeriodicFEM( ElementList , AnalysisSettings , GlobalNodesList , BC  , &
-                                           Kg , NLSolver )
+                                           Kg , KgRed, NLSolver )
 
             !************************************************************************************
             ! DECLARATIONS OF VARIABLES
@@ -1395,7 +1395,7 @@ module FEMAnalysis
             use Interfaces
             use MathRoutines
             use LoadHistoryData
-            use modFEMSystemOfEquations
+            use ModMultiscalePeriodicFEMSoE
 
             implicit none
 
@@ -1406,20 +1406,21 @@ module FEMAnalysis
             type (ClassNodes),               pointer, dimension(:)  :: GlobalNodesList
             class (ClassBoundaryConditions),  pointer               :: BC
             type (ClassGlobalSparseMatrix),  pointer                :: Kg
+            type (ClassGlobalSparseMatrix),  pointer                :: KgRed
             class(ClassNonLinearSolver),     pointer                :: NLSolver
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged
             real(8) :: DeltaTime , Time_alpha0
-            real(8) :: alpha, alpha_max, alpha_min, alpha_aux
-            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep
+            real(8) :: alpha, alpha_max, alpha_min, alpha_aux, dist, distcentr
+            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, nNod, centr, i
             real(8), parameter :: GR= (1.0d0 + dsqrt(5.0d0))/2.0d0
 
             integer, allocatable, dimension(:) :: KgValZERO, KgValONE
             integer :: contZERO, contONE
             
-            type(ClassFEMSystemOfEquations) :: FEMSoE
+            type(ClassMultiscalePeriodicFEMSoE) :: FEMSoE
 
             FileID_FEMAnalysisResults = 42
             open (FileID_FEMAnalysisResults,file='FEMAnalysis.result',status='unknown')
@@ -1438,17 +1439,25 @@ module FEMAnalysis
             FEMSoE % GlobalNodesList => GlobalNodesList
             FEMSoE % BC => BC
             FEMSoE % Kg => Kg
+            FEMSoE % KgRed => KgRed
+
+            FEMSoE % isPeriodic = .TRUE.
             
-            FEMSoE % nDOF = nDOF
-            FEMSoE % isPeriodic = .FALSE.
-            
-            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % Ubar(nDOF) )
+            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % Ubar(nDOF) , FEMSoE % UConverged(nDOF) )
 
 
             ! Allocating arrays
             allocate( R(nDOF), DeltaFext(nDOF),   Fext_alpha0(nDOF) )
             allocate( U(nDOF), DeltaUPresc(nDOF), Ubar_alpha0(nDOF), Uconverged(nDOF)  )
 
+            allocate(FEMSoE%TMat)
+            write(*,*) ''
+            write(*,*) 'Building periodicity matrix...'
+            call FEMSoE%BuildT
+            FEMSoE%TMatDescr(1) = 'G'
+            FEMSoE%TMatDescr(4) = 'F'
+            write(*,*) 'Done!'
+            write(*,*)            
 
             U = 0.0d0
             Ubar_alpha0 = 0.0d0
@@ -1477,25 +1486,31 @@ module FEMAnalysis
 
                     call BC%GetBoundaryConditions(AnalysisSettings, LC, ST, Fext_alpha0, DeltaFext,FEMSoE%DispDOF, U, DeltaUPresc)
 
-                    
                     ! Mapeando os graus de liberdade da matrix esparsa para a aplicação
                     ! da CC de deslocamento prescrito
                     !-----------------------------------------------------------------------------------
                     if ( (LC == 1) .and. (ST == 1) ) then
 
+                        allocate(BC%FixedSupport%dof(3))
+                        nNod = size(FEMSoE%GlobalNodesList)
+                        centr = 1;
+                        distcentr = sqrt((FEMSoE%GlobalNodesList(centr)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(3))**2)
+                        do i=2,nNod
+                            dist = sqrt((FEMSoE%GlobalNodesList(i)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(3))**2)
+                            if (dist < distcentr) then
+                                centr = i
+                                distcentr = dist
+                            endif
+                        enddo
+                                                   
+                        BC%FixedSupport%dof(1)=3*centr-2
+                        BC%FixedSupport%dof(2)=3*centr-1
+                        BC%FixedSupport%dof(3)=3*centr                        
+                        
                         allocate( KgValZERO(size(FEMSoE%Kg%Val)), KgValONE(size(FEMSoE%Kg%Val)) )
-
-                        call BC%AllocatePrescDispSparseMapping(FEMSoE%Kg, FEMSoE%DispDOF, KgValZERO, KgValONE, contZERO, contONE)
-
-                        allocate( FEMSoE%PrescDispSparseMapZERO(contZERO), FEMSoE%PrescDispSparseMapONE(contONE) )
-
-                        FEMSoE%PrescDispSparseMapZERO(:) = KgValZERO(1:contZERO)
-                        FEMSoE%PrescDispSparseMapONE(:) = KgValONE(1:contONE)
-
+                        
                         call BC%AllocateFixedSupportSparseMapping(FEMSoE%Kg, KgValZERO, KgValONE, contZERO, contONE)
-
                         allocate( FEMSoE%FixedSupportSparseMapZERO(contZERO), FEMSoE%FixedSupportSparseMapONE(contONE) )
-
                         FEMSoE%FixedSupportSparseMapZERO(:) = KgValZERO(1:contZERO)
                         FEMSoE%FixedSupportSparseMapONE(:) = KgValONE(1:contONE)
 
@@ -1510,6 +1525,7 @@ module FEMAnalysis
                     ! Prescribed Incremental Displacement
                     Ubar_alpha0 = U
                     Uconverged = U
+                    FEMSoE % UConverged = UConverged
 
                     alpha_max = 1.0d0 ; alpha_min = 0.0d0
                     alpha = alpha_max
@@ -1528,7 +1544,7 @@ module FEMAnalysis
                         FEMSoE % Ubar = Ubar_alpha0 + alpha*DeltaUPresc
 
 
-                        call NLSolver%Solve( FEMSoE , XGuess = Uconverged , X = U )
+                        call NLSolver%Solve( FEMSoE , XGuess = FEMSoE%Ubar , X = U )
 
                         IF (NLSolver%Status%Error) then
 

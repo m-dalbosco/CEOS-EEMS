@@ -685,13 +685,13 @@ module ModMultiscaleBoundaryConditions
 
             !**************************************************************
             ! Zerando linhas e colunas
-            Kg%Val(PrescDispSparseMapZERO) = 0.0d0
+            !Kg%Val(PrescDispSparseMapZERO) = 0.0d0
             
             ! Adicionando 1 na diagonal principal
-            Kg%Val(PrescDispSparseMapONE) = 1.0d0
+            !Kg%Val(PrescDispSparseMapONE) = 1.0d0
 
             ! Corrigindo resíduo por rearranjo de equações
-            R(Presc_Disp_DOF) = Udirichlet(Presc_Disp_DOF)
+            !R(Presc_Disp_DOF) = Udirichlet(Presc_Disp_DOF)
 
             !**************************************************************
 

@@ -548,28 +548,28 @@ contains
                     enddo
                     
                     ! Taylor -------------------------
-                    !allocate(BC%NodalMultiscaleDispBC(size(GlobalNodesList)))
-                    !do i=1,size(GlobalNodesList)
-                    !    BC%NodalMultiscaleDispBC(i)%Fmacro => BC%MacroscopicDefGrad
-                    !    BC%NodalMultiscaleDispBC(i)%Node => GlobalNodesList(i)
-                    !enddo
+                    allocate(BC%NodalMultiscaleDispBC(size(GlobalNodesList)))
+                    do i=1,size(GlobalNodesList)
+                        BC%NodalMultiscaleDispBC(i)%Fmacro => BC%MacroscopicDefGrad
+                        BC%NodalMultiscaleDispBC(i)%Node => GlobalNodesList(i)
+                    enddo
                     
                     ! Linear -------------------------
-                    cont = 0
-                    do i=1,size(BC%BoundaryNodes)
-                        cont = cont + size(BC%BoundaryNodes(i)%Nodes)
-                    enddo
-                    
-                    allocate(BC%NodalMultiscaleDispBC(cont))
-                    
-                    cont = 0
-                    do i=1,size(BC%BoundaryNodes)
-                        do j=1,size(BC%BoundaryNodes(i)%Nodes)
-                            cont = cont + 1
-                            BC%NodalMultiscaleDispBC(cont)%Fmacro => BC%MacroscopicDefGrad
-                            BC%NodalMultiscaleDispBC(cont)%Node => GlobalNodesList(BC%BoundaryNodes(i)%Nodes(j))
-                        enddo
-                    enddo
+                    !cont = 0
+                    !do i=1,size(BC%BoundaryNodes)
+                    !    cont = cont + size(BC%BoundaryNodes(i)%Nodes)
+                    !enddo
+                    !
+                    !allocate(BC%NodalMultiscaleDispBC(cont))
+                    ! 
+                    !cont = 0
+                    !do i=1,size(BC%BoundaryNodes)
+                    !    do j=1,size(BC%BoundaryNodes(i)%Nodes)
+                    !        cont = cont + 1
+                    !        BC%NodalMultiscaleDispBC(cont)%Fmacro => BC%MacroscopicDefGrad
+                    !        BC%NodalMultiscaleDispBC(cont)%Node => GlobalNodesList(BC%BoundaryNodes(i)%Nodes(j))
+                    !    enddo
+                    !enddo
                     
                     
                 type is ( ClassMultiscaleBoundaryConditionsMinimal )
