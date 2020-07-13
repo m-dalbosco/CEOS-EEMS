@@ -266,6 +266,8 @@ contains
             AnalysisSettings%MultiscaleModel = MultiscaleModels%Taylor
         elseif (DataFile%CompareStrings(ListOfValues(8),"Linear")) then
             AnalysisSettings%MultiscaleModel = MultiscaleModels%Linear
+        elseif (DataFile%CompareStrings(ListOfValues(8),"Periodic")) then
+            AnalysisSettings%MultiscaleModel = MultiscaleModels%Periodic
         elseif (DataFile%CompareStrings(ListOfValues(8),"Minimal")) then
             AnalysisSettings%MultiscaleModel = MultiscaleModels%Minimal
         elseif (DataFile%CompareStrings(ListOfValues(8),"MinimalPhases")) then
@@ -318,6 +320,8 @@ contains
                  allocate(ClassMultiscaleBoundaryConditionsTaylorAndLinear:: BC)
             elseif (AnalysisSettings%MultiscaleModel == MultiscaleModels%Linear) then
                 allocate(ClassMultiscaleBoundaryConditionsTaylorAndLinear:: BC)
+            elseif (AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
+               allocate(ClassMultiscaleBoundaryConditionsPeriodic :: BC)
             elseif (AnalysisSettings%MultiscaleModel == MultiscaleModels%Minimal) then
                allocate(ClassMultiscaleBoundaryConditionsMinimal:: BC)
             elseif (AnalysisSettings%MultiscaleModel == MultiscaleModels%MinimalPhases) then
@@ -518,6 +522,56 @@ contains
                         stop "Error: Kinematical Constraints not identified"
                     endif
 
+                type is ( ClassMultiscaleBoundaryConditionsPeriodic )
+                    
+                    BC%TypeOfBC = MultiscaleBCType%Periodic
+                    
+                    allocate(BC%MacroscopicDefGrad(3,3))
+
+                    k=0
+                    do i=1,3
+                        do j=1,3
+
+                            k = k + 1
+
+                            call BC%MacroscopicDefGrad(i,j)%ReadTimeDiscretization(TimeFileName)
+
+                            if (DataFile%CompareStrings(ListOfValues(k),"Zero")) then
+                                call BC%MacroscopicDefGrad(i,j)%CreateConstantLoadHistory(0.0d0)
+                            elseif (DataFile%CompareStrings(ListOfValues(k),"One")) then
+                                call BC%MacroscopicDefGrad(i,j)%CreateConstantLoadHistory(1.0d0)
+                            else
+                                call BC%MacroscopicDefGrad(i,j)%ReadValueDiscretization(ListOfValues(k))
+                            endif
+
+                        enddo
+                    enddo
+                    
+                    ! Taylor -------------------------
+                    !allocate(BC%NodalMultiscaleDispBC(size(GlobalNodesList)))
+                    !do i=1,size(GlobalNodesList)
+                    !    BC%NodalMultiscaleDispBC(i)%Fmacro => BC%MacroscopicDefGrad
+                    !    BC%NodalMultiscaleDispBC(i)%Node => GlobalNodesList(i)
+                    !enddo
+                    
+                    ! Linear -------------------------
+                    cont = 0
+                    do i=1,size(BC%BoundaryNodes)
+                        cont = cont + size(BC%BoundaryNodes(i)%Nodes)
+                    enddo
+                    
+                    allocate(BC%NodalMultiscaleDispBC(cont))
+                    
+                    cont = 0
+                    do i=1,size(BC%BoundaryNodes)
+                        do j=1,size(BC%BoundaryNodes(i)%Nodes)
+                            cont = cont + 1
+                            BC%NodalMultiscaleDispBC(cont)%Fmacro => BC%MacroscopicDefGrad
+                            BC%NodalMultiscaleDispBC(cont)%Node => GlobalNodesList(BC%BoundaryNodes(i)%Nodes(j))
+                        enddo
+                    enddo
+                    
+                    
                 type is ( ClassMultiscaleBoundaryConditionsMinimal )
 
                     BC%TypeOfBC = MultiscaleBCType%Minimal

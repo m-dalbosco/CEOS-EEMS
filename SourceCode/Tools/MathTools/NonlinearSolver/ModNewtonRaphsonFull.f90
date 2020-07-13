@@ -51,7 +51,7 @@ contains
 
         integer :: it, i
         real(8) :: normR , norma
-        real(8),allocatable,dimension(:) :: R , DX
+        real(8),allocatable,dimension(:) :: R , DX, DXFull
 
         real(8),dimension(:,:),pointer :: GFull
         class(ClassGlobalSparseMatrix),pointer :: GSparse
@@ -63,7 +63,11 @@ contains
         it = 0
         X=Xguess
 
-        allocate(R(size(X)),DX(size(X)))
+        if (SOE%isPeriodic) then
+            !allocate(R(SOE%nDOF),DX(SOE%nDOF),DXFull(size(X)))
+        else
+            allocate(R(size(X)),DX(size(X)))
+        endif
 
         LOOP: do while (.true.)
             
@@ -140,12 +144,16 @@ contains
                 case (NewtonRaphsonFull_MatrixTypes%Sparse)
                     call this%LinearSolver%Solve(GSparse, -R, DX)
                 case default
-            end select
+                end select
 
             !---------------------------------------------------------------------------------------------------------------
             ! Update Unknown Variable and Additional Variables
             !---------------------------------------------------------------------------------------------------------------
-            X = X + DX
+            if (SOE%isPeriodic) then
+                !X = X + DX
+            else
+                X = X + DX
+            endif
 
             call SOE%PostUpdate(X)
             !---------------------------------------------------------------------------------------------------------------
