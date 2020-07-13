@@ -59,16 +59,6 @@ module ModMultiscaleBoundaryConditions
 
         contains
             procedure :: GetBoundaryConditions => GetBoundaryConditionsMultiscalePeriodic
-            !procedure :: ApplyBoundaryConditionsNEW => ApplyBoundaryConditionsMultiscalePeriodic
-
-        end type
-    !-----------------------------------------------------------------------------------
-
-    !-----------------------------------------------------------------------------------
-    type, extends(ClassMultiscaleBoundaryConditions) :: ClassMultiscaleBoundaryConditionsPeriodic
-
-        contains
-            procedure :: GetBoundaryConditions => GetBoundaryConditionsMultiscalePeriodic
             procedure :: ApplyBoundaryConditionsNEW => ApplyBoundaryConditionsMultiscalePeriodic
         end type
     !-----------------------------------------------------------------------------------
