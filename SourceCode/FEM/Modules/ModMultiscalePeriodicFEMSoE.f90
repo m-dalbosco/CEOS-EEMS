@@ -15,6 +15,7 @@ module ModMultiscalePeriodicFEMSoE
         real(8), dimension(:), allocatable                   :: Fint , Fext , UBar, UConverged
         real(8)                                              :: Time
         integer, dimension(:), pointer                       :: DispDOF
+        integer, dimension(:), allocatable                   :: verticesDOF
 
         integer, dimension(:), allocatable                   :: PrescDispSparseMapZERO
         integer, dimension(:), allocatable                   :: PrescDispSparseMapONE
@@ -188,9 +189,11 @@ module ModMultiscalePeriodicFEMSoE
         integer                              :: XmYmZm, XpYmZm, XmYpZm, XmYmZp, XpYpZp, XmYpZp, XpYmZp, XpYpZm
         integer                              :: countXm, countXp, countYm, countYp, countZm, countZp
         integer                              :: countXmYm, countXmZm, countXmYp, countXmZp, countXpYm, countXpZm, countXpYp, countXpZp, countYmZm, countYmZp, countYpZm, countYpZp
-        real(8)                              :: Xmin, Xmax, Ymin, Ymax, Zmin, Zmax
+        real(8)                              :: Xmin, Xmax, Ymin, Ymax, Zmin, Zmax, tol
         integer,allocatable,dimension(:,:)   :: TMatFull, TMatRed
         
+        
+        tol = 1.0D-6
         
         nNod = size(this%GlobalNodesList)
         nNodBound = size(this%BC%BoundaryNodes(1)%Nodes)
@@ -236,75 +239,75 @@ module ModMultiscalePeriodicFEMSoE
         nNodBYZ=0.0d0
         do k=1,nNodBound
             idx = this%BC%BoundaryNodes(1)%Nodes(k)
-            if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in Xm
-                if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in XmYm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node XmYmZm
+            if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in Xm
+                if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in XmYm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node XmYmZm
                         XmYmZm = idx
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node XmYmZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node XmYmZp
                         XmYmZp = idx
                     else !node inside XmYm
                         nNodBXY = nNodBXY+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node in XmYp
-                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node XmYpZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node in XmYp
+                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node XmYpZm
                         XmYpZm = idx
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node XmYpZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node XmYpZp
                         XmYpZp = idx
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in XmZm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node XmYmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in XmZm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node XmYmZm
                         !node XmYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node XmYpZm
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node XmYpZm
                         !node XmYpZm already found
                     else !node inside XmZm
                         nNodBXZ = nNodBXZ+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node in XmZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node in XmZp
                     !nNodBXZ already counted
                 else !node inside Xm
                     nNodBX=nNodBX+1
                 endif
-            elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in Ym
-                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in XmYm
+            elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in Ym
+                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in XmYm
                     !nNodBXY already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node in XpYm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node XpYmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node in XpYm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node XpYmZm
                         XpYmZm = idx
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node XpYmZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node XpYmZp
                         XpYmZp = idx
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in YmZm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node XmYmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in YmZm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node XmYmZm
                         !node XmYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node XpYmZm
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node XpYmZm
                         !node XpYmZm already found
                     else !node inside YmZm
                         nNodBYZ = nNodBYZ+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node in YmZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node in YmZp
                     !nNodBYZ already counted
                 else !node inside Ym
                     nNodBY=nNodBY+1
                 endif
-            elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in Zm
-                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in XmZm
+            elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in Zm
+                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in XmZm
                     !nNodBXZ already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node in XpZm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node XpYmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node in XpZm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node XpYmZm
                         !node XpYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node XpYpZm
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node XpYpZm
                         XpYpZm = idx
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in YmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in YmZm
                     !nNodBYZ already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node in YpZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node in YpZm
                     !nNodBYZ already counted
                 else !node inside Zm
                     nNodBZ=nNodBZ+1
                 endif
             endif
 
-            if ((abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) .AND. (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) .AND. (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12)) then
+            if ((abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) .AND. (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) .AND. (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol)) then
                 XpYpZp = idx
             endif
                     
@@ -334,38 +337,38 @@ module ModMultiscalePeriodicFEMSoE
         countYpZp = 1
         do k=1,nNodBound
             idx = this%BC%BoundaryNodes(1)%Nodes(k)
-            if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in Xm
-                if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in XmYm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node XmYmZm
+            if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in Xm
+                if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in XmYm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node XmYmZm
                         !XmYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node XmYmZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node XmYmZp
                         !XmYmZp already found
                     else !node inside XmYm
                         XmYm(countXmYm) = idx
                         countXmYm = countXmYm+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node in XmYp
-                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node XmYpZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node in XmYp
+                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node XmYpZm
                         !XmYpZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node XmYpZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node XmYpZp
                         !XmYpZp already found
                     else !node inside XmYp
                         XmYp(countXmYp) = idx
                         countXmYp = countXmYp+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in XmZm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node XmYmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in XmZm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node XmYmZm
                         !node XmYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node XmYpZm
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node XmYpZm
                         !node XmYpZm already found
                     else !node inside XmZm
                         XmZm(countXmZm) = idx
                         countXmZm = countXmZm+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node in XmZp
-                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node XmYmZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node in XmZp
+                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node XmYmZp
                         !node XmYmZp already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node XmYpZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node XmYpZp
                         !node XmYpZp already found
                     else !node inside XmZp
                         XmZp(countXmZp) = idx
@@ -375,38 +378,38 @@ module ModMultiscalePeriodicFEMSoE
                     Xm(countXm) = idx
                     countXm = countXm+1
                 endif
-            elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node in Xp
-                if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in XpYm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node XpYmZm
+            elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node in Xp
+                if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in XpYm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node XpYmZm
                         !XpYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node XpYmZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node XpYmZp
                         !XpYmZp already found
                     else !node inside XpYm
                         XpYm(countXpYm) = idx
                         countXpYm = countXpYm+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node in XpYp
-                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node XpYpZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node in XpYp
+                    if (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node XpYpZm
                         !XpYpZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node XpYpZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node XpYpZp
                         !XpYpZp already found
                     else !node inside XpYp
                         XpYp(countXpYp) = idx
                         countXpYp = countXpYp+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in XpZm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node XpYmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in XpZm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node XpYmZm
                         !node XpYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node XpYpZm
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node XpYpZm
                         !node XpYpZm already found
                     else !node inside XpZm
                         XpZm(countXpZm) = idx
                         countXpZm = countXpZm+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node in XpZp
-                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node XpYmZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node in XpZp
+                    if (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node XpYmZp
                         !node XpYmZp already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node XpYpZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node XpYpZp
                         !node XpYpZp already found
                     else !node inside XpZp
                         XpZp(countXpZp) = idx
@@ -416,24 +419,24 @@ module ModMultiscalePeriodicFEMSoE
                     Xp(countXp) = idx
                     countXp = countXp+1
                 endif
-            elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in Ym
-                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in XmYm
+            elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in Ym
+                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in XmYm
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node in XpYm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node in XpYm
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in YmZm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node XmYmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in YmZm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node XmYmZm
                         !node XmYmZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node XpYmZm
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node XpYmZm
                         !node XpYmZm already found
                     else !node inside YmZm
                         YmZm(countYmZm) = idx
                         countYmZm = countYmZm+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node in YmZp
-                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node XmYmZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node in YmZp
+                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node XmYmZp
                         !node XmYmZp already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node XpYmZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node XpYmZp
                         !node XpYmZp already found
                     else !node inside YmZp
                         YmZp(countYmZp) = idx
@@ -443,24 +446,24 @@ module ModMultiscalePeriodicFEMSoE
                     Ym(countYm) = idx
                     countYm = countYm+1
                 endif
-            elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node in Yp
-                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in XmYp
+            elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node in Yp
+                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in XmYp
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node in XpYp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node in XpYp
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in YpZm
-                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node XmYpZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in YpZm
+                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node XmYpZm
                         !node XmYpZm already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node XpYpZm
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node XpYpZm
                         !node XpYpZm already found
                     else !node inside YpZm
                         YpZm(countYpZm) = idx
                         countYpZm = countYpZm+1
                     endif
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node in YpZp
-                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node XmYpZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node in YpZp
+                    if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node XmYpZp
                         !node XmYpZp already found
-                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node XpYpZp
+                    elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node XpYpZp
                         !node XpYpZp already found
                     else !node inside YpZp
                         YpZp(countYpZp) = idx
@@ -470,27 +473,27 @@ module ModMultiscalePeriodicFEMSoE
                     Yp(countYp) = idx
                     countYp = countYp+1
                 endif            
-            elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<1.0D-12) then !node in Zm
-                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in XmZm
+            elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmin)<tol) then !node in Zm
+                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in XmZm
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node in XpZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node in XpZm
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in YmZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in YmZm
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node in YpZm
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node in YpZm
                     !already counted
                 else !node inside Zm
                     Zm(countZm) = idx
                     countZm = countZm+1
                 endif
-             elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<1.0D-12) then !node in Zp
-                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<1.0D-12) then !node in XmZp
+             elseif (abs(this%GlobalNodesList(idx)%CoordX(3)-Zmax)<tol) then !node in Zp
+                if (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmin)<tol) then !node in XmZp
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<1.0D-12) then !node in XpZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(1)-Xmax)<tol) then !node in XpZp
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<1.0D-12) then !node in YmZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymin)<tol) then !node in YmZp
                     !already counted
-                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<1.0D-12) then !node in YpZp
+                elseif (abs(this%GlobalNodesList(idx)%CoordX(2)-Ymax)<tol) then !node in YpZp
                     !already counted
                 else !node inside Zp
                     Zp(countZp) = idx
@@ -564,7 +567,7 @@ module ModMultiscalePeriodicFEMSoE
         do m=1,nNodBXY
             !Find periodic nodes in XmYp, XpYp, XpYm and imposes periodicity
             do n=1,nNodBXY
-                if (abs(this%GlobalNodesList(XmYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<1.0D-12) then
+                if (abs(this%GlobalNodesList(XmYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<tol) then
                     TMatFull(3*XmYp(n)-2,3*XmYm(m)-2)=1
                     TMatFull(3*XmYp(n)-1,3*XmYm(m)-1)=1
                     TMatFull(3*XmYp(n),3*XmYm(m))=1
@@ -572,7 +575,7 @@ module ModMultiscalePeriodicFEMSoE
                     TMatFull(3*XmYp(n)-1,3*XmYp(n)-1)=0
                     TMatFull(3*XmYp(n),3*XmYp(n))=0
                 endif
-                if (abs(this%GlobalNodesList(XpYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<1.0D-12) then
+                if (abs(this%GlobalNodesList(XpYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<tol) then
                     TMatFull(3*XpYp(n)-2,3*XmYm(m)-2)=1
                     TMatFull(3*XpYp(n)-1,3*XmYm(m)-1)=1
                     TMatFull(3*XpYp(n),3*XmYm(m))=1
@@ -580,7 +583,7 @@ module ModMultiscalePeriodicFEMSoE
                     TMatFull(3*XpYp(n)-1,3*XpYp(n)-1)=0
                     TMatFull(3*XpYp(n),3*XpYp(n))=0
                 endif
-                if (abs(this%GlobalNodesList(XpYm(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<1.0D-12) then
+                if (abs(this%GlobalNodesList(XpYm(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<tol) then
                     TMatFull(3*XpYm(n)-2,3*XmYm(m)-2)=1
                     TMatFull(3*XpYm(n)-1,3*XmYm(m)-1)=1
                     TMatFull(3*XpYm(n),3*XmYm(m))=1
@@ -595,7 +598,7 @@ module ModMultiscalePeriodicFEMSoE
         do m=1,nNodBXZ
             !Find periodic nodes in XmZp, XpZp, XpZm and imposes periodicity
             do n=1,nNodBXZ
-                if (abs(this%GlobalNodesList(XmZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<1.0D-12) then
+                if (abs(this%GlobalNodesList(XmZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<tol) then
                     TMatFull(3*XmZp(n)-2,3*XmZm(m)-2)=1
                     TMatFull(3*XmZp(n)-1,3*XmZm(m)-1)=1
                     TMatFull(3*XmZp(n),3*XmZm(m))=1
@@ -603,7 +606,7 @@ module ModMultiscalePeriodicFEMSoE
                     TMatFull(3*XmZp(n)-1,3*XmZp(n)-1)=0
                     TMatFull(3*XmZp(n),3*XmZp(n))=0
                 endif
-                if (abs(this%GlobalNodesList(XpZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<1.0D-12) then
+                if (abs(this%GlobalNodesList(XpZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<tol) then
                     TMatFull(3*XpZp(n)-2,3*XmZm(m)-2)=1
                     TMatFull(3*XpZp(n)-1,3*XmZm(m)-1)=1
                     TMatFull(3*XpZp(n),3*XmZm(m))=1
@@ -611,7 +614,7 @@ module ModMultiscalePeriodicFEMSoE
                     TMatFull(3*XpZp(n)-1,3*XpZp(n)-1)=0
                     TMatFull(3*XpZp(n),3*XpZp(n))=0
                 endif
-                if (abs(this%GlobalNodesList(XpZm(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<1.0D-12) then
+                if (abs(this%GlobalNodesList(XpZm(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<tol) then
                     TMatFull(3*XpZm(n)-2,3*XmZm(m)-2)=1
                     TMatFull(3*XpZm(n)-1,3*XmZm(m)-1)=1
                     TMatFull(3*XpZm(n),3*XmZm(m))=1
@@ -626,7 +629,7 @@ module ModMultiscalePeriodicFEMSoE
         do m=1,nNodBYZ
             !Find periodic nodes in XmZp, XpZp, XpZm and imposes periodicity
             do n=1,nNodBYZ
-                if (abs(this%GlobalNodesList(YmZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<1.0D-12) then
+                if (abs(this%GlobalNodesList(YmZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<tol) then
                     TMatFull(3*YmZp(n)-2,3*YmZm(m)-2)=1
                     TMatFull(3*YmZp(n)-1,3*YmZm(m)-1)=1
                     TMatFull(3*YmZp(n),3*YmZm(m))=1
@@ -634,7 +637,7 @@ module ModMultiscalePeriodicFEMSoE
                     TMatFull(3*YmZp(n)-1,3*YmZp(n)-1)=0
                     TMatFull(3*YmZp(n),3*YmZp(n))=0
                 endif
-                if (abs(this%GlobalNodesList(YpZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<1.0D-12) then
+                if (abs(this%GlobalNodesList(YpZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<tol) then
                     TMatFull(3*YpZp(n)-2,3*YmZm(m)-2)=1
                     TMatFull(3*YpZp(n)-1,3*YmZm(m)-1)=1
                     TMatFull(3*YpZp(n),3*YmZm(m))=1
@@ -642,7 +645,7 @@ module ModMultiscalePeriodicFEMSoE
                     TMatFull(3*YpZp(n)-1,3*YpZp(n)-1)=0
                     TMatFull(3*YpZp(n),3*YpZp(n))=0
                 endif
-                if (abs(this%GlobalNodesList(YpZm(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<1.0D-12) then
+                if (abs(this%GlobalNodesList(YpZm(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<tol) then
                     TMatFull(3*YpZm(n)-2,3*YmZm(m)-2)=1
                     TMatFull(3*YpZm(n)-1,3*YmZm(m)-1)=1
                     TMatFull(3*YpZm(n),3*YmZm(m))=1
@@ -657,7 +660,7 @@ module ModMultiscalePeriodicFEMSoE
         do m=1,nNodBX
             !Find periodic nodes in Xp and imposes periodicity
             do n=1,nNodBX
-                if ((abs(this%GlobalNodesList(Xp(n))%CoordX(2) - this%GlobalNodesList(Xm(m))%CoordX(2))<1.0D-12) .AND. (abs(this%GlobalNodesList(Xp(n))%CoordX(3) - this%GlobalNodesList(Xm(m))%CoordX(3))<1.0D-12)) then
+                if ((abs(this%GlobalNodesList(Xp(n))%CoordX(2) - this%GlobalNodesList(Xm(m))%CoordX(2))<tol) .AND. (abs(this%GlobalNodesList(Xp(n))%CoordX(3) - this%GlobalNodesList(Xm(m))%CoordX(3))<tol)) then
                     TMatFull(3*Xp(n)-2,3*Xm(m)-2)=1
                     TMatFull(3*Xp(n)-1,3*Xm(m)-1)=1
                     TMatFull(3*Xp(n),3*Xm(m))=1
@@ -672,7 +675,7 @@ module ModMultiscalePeriodicFEMSoE
         do m=1,nNodBY
             !Find periodic nodes in Yp and imposes periodicity
             do n=1,nNodBY
-                if ((abs(this%GlobalNodesList(Yp(n))%CoordX(1) - this%GlobalNodesList(Ym(m))%CoordX(1))<1.0D-12) .AND. (abs(this%GlobalNodesList(Yp(n))%CoordX(3) - this%GlobalNodesList(Ym(m))%CoordX(3))<1.0D-12)) then
+                if ((abs(this%GlobalNodesList(Yp(n))%CoordX(1) - this%GlobalNodesList(Ym(m))%CoordX(1))<tol) .AND. (abs(this%GlobalNodesList(Yp(n))%CoordX(3) - this%GlobalNodesList(Ym(m))%CoordX(3))<tol)) then
                     TMatFull(3*Yp(n)-2,3*Ym(m)-2)=1
                     TMatFull(3*Yp(n)-1,3*Ym(m)-1)=1
                     TMatFull(3*Yp(n),3*Ym(m))=1
@@ -687,7 +690,7 @@ module ModMultiscalePeriodicFEMSoE
         do m=1,nNodBZ
             !Finds periodic nodes in Zp and imposes periodicity
             do n=1,nNodBZ
-                if ((abs(this%GlobalNodesList(Zp(n))%CoordX(1) - this%GlobalNodesList(Zm(m))%CoordX(1))<1.0D-12) .AND. (abs(this%GlobalNodesList(Zp(n))%CoordX(2) - this%GlobalNodesList(Zm(m))%CoordX(2))<1.0D-12)) then
+                if ((abs(this%GlobalNodesList(Zp(n))%CoordX(1) - this%GlobalNodesList(Zm(m))%CoordX(1))<tol) .AND. (abs(this%GlobalNodesList(Zp(n))%CoordX(2) - this%GlobalNodesList(Zm(m))%CoordX(2))<tol)) then
                     TMatFull(3*Zp(n)-2,3*Zm(m)-2)=1
                     TMatFull(3*Zp(n)-1,3*Zm(m)-1)=1
                     TMatFull(3*Zp(n),3*Zm(m))=1
@@ -744,6 +747,40 @@ module ModMultiscalePeriodicFEMSoE
         
         this%nDOF = nDOFRed
 
+        allocate(this%verticesDOF(24))
+        
+        this%verticesDOF(1)=3*XmYmZm-2
+        this%verticesDOF(2)=3*XmYmZm-1
+        this%verticesDOF(3)=3*XmYmZm
+        
+        this%verticesDOF(4)=3*XpYmZm-2
+        this%verticesDOF(5)=3*XpYmZm-1
+        this%verticesDOF(6)=3*XpYmZm
+        
+        this%verticesDOF(7)=3*XmYpZm-2
+        this%verticesDOF(8)=3*XmYpZm-1
+        this%verticesDOF(9)=3*XmYpZm
+        
+        this%verticesDOF(10)=3*XmYmZp-2
+        this%verticesDOF(11)=3*XmYmZp-1
+        this%verticesDOF(12)=3*XmYmZp
+        
+        this%verticesDOF(13)=3*XpYpZp-2
+        this%verticesDOF(14)=3*XpYpZp-1
+        this%verticesDOF(15)=3*XpYpZp
+        
+        this%verticesDOF(16)=3*XmYpZp-2
+        this%verticesDOF(17)=3*XmYpZp-1
+        this%verticesDOF(18)=3*XmYpZp
+        
+        this%verticesDOF(19)=3*XpYmZp-2
+        this%verticesDOF(20)=3*XpYmZp-1
+        this%verticesDOF(21)=3*XpYmZp
+        
+        this%verticesDOF(22)=3*XpYpZm-2
+        this%verticesDOF(23)=3*XpYpZm-1
+        this%verticesDOF(24)=3*XpYpZm
+        
         
     end subroutine
 

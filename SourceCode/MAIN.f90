@@ -58,6 +58,7 @@ program MAIN
 
 ! TODO (Thiago#1#11/17/15): Trocar todos o nome dos módulos para Mod'NOME'
 
+    call kmp_set_warnings_off()
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 	!                                       MAIN PROGRAM

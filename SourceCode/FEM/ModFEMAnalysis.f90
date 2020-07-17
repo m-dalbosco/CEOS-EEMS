@@ -1413,8 +1413,8 @@ module FEMAnalysis
             ! -----------------------------------------------------------------------------------
             real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged
             real(8) :: DeltaTime , Time_alpha0
-            real(8) :: alpha, alpha_max, alpha_min, alpha_aux, dist, distcentr
-            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, nNod, centr, i
+            real(8) :: alpha, alpha_max, alpha_min, alpha_aux
+            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep
             real(8), parameter :: GR= (1.0d0 + dsqrt(5.0d0))/2.0d0
 
             integer, allocatable, dimension(:) :: KgValZERO, KgValONE
@@ -1451,7 +1451,6 @@ module FEMAnalysis
             allocate( U(nDOF), DeltaUPresc(nDOF), Ubar_alpha0(nDOF), Uconverged(nDOF)  )
 
             allocate(FEMSoE%TMat)
-            write(*,*) ''
             write(*,*) 'Building periodicity matrix...'
             call FEMSoE%BuildT
             FEMSoE%TMatDescr(1) = 'G'
@@ -1491,21 +1490,8 @@ module FEMAnalysis
                     !-----------------------------------------------------------------------------------
                     if ( (LC == 1) .and. (ST == 1) ) then
 
-                        allocate(BC%FixedSupport%dof(3))
-                        nNod = size(FEMSoE%GlobalNodesList)
-                        centr = 1;
-                        distcentr = sqrt((FEMSoE%GlobalNodesList(centr)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(centr)%CoordX(3))**2)
-                        do i=2,nNod
-                            dist = sqrt((FEMSoE%GlobalNodesList(i)%CoordX(1))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(2))**2 + (FEMSoE%GlobalNodesList(i)%CoordX(3))**2)
-                            if (dist < distcentr) then
-                                centr = i
-                                distcentr = dist
-                            endif
-                        enddo
-                                                   
-                        BC%FixedSupport%dof(1)=3*centr-2
-                        BC%FixedSupport%dof(2)=3*centr-1
-                        BC%FixedSupport%dof(3)=3*centr                        
+                        allocate(BC%FixedSupport%dof(24))
+                        BC%FixedSupport%dof = FEMSoE%verticesDOF                       
                         
                         allocate( KgValZERO(size(FEMSoE%Kg%Val)), KgValONE(size(FEMSoE%Kg%Val)) )
                         
@@ -1515,7 +1501,6 @@ module FEMAnalysis
                         FEMSoE%FixedSupportSparseMapONE(:) = KgValONE(1:contONE)
 
                         deallocate( KgValZERO, KgValONE )
-
 
                     end if
                     !-----------------------------------------------------------------------------------
@@ -1544,7 +1529,7 @@ module FEMAnalysis
                         FEMSoE % Ubar = Ubar_alpha0 + alpha*DeltaUPresc
 
 
-                        call NLSolver%Solve( FEMSoE , XGuess = FEMSoE%Ubar , X = U )
+                        call NLSolver%Solve( FEMSoE , FEMSoE%Ubar , U )
 
                         IF (NLSolver%Status%Error) then
 
