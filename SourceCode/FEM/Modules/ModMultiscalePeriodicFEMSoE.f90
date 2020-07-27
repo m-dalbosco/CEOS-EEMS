@@ -7,6 +7,7 @@ module ModMultiscalePeriodicFEMSoE
     use GlobalSparseMatrix
     use SparseMatrixRoutines
     use MathRoutines
+    use IFPORT
 
     implicit none
 
@@ -185,12 +186,13 @@ module ModMultiscalePeriodicFEMSoE
         type(SparseMatrix)                   :: TMatSparse
         integer                              :: idx, i, j, k, m, n, col, nDOF, nDOFRed, nNod, nNodBound, FileID_TMatFull, FileID_TMatRed
         integer                              :: nNodBX, nNodBY, nNodBZ, nNodBXY, nNodBXZ, nNodBYZ
-        integer,allocatable,dimension(:)     :: Xm, Xp, Ym, Yp, Zm, Zp, XmYm, XmZm, XmYp, XmZp, XpYm, XpZm, XpYp, XpZp, YmZm, YmZp, YpZm, YpZp
+        integer,allocatable,dimension(:)     :: Xm, Xp, Ym, Yp, Zm, Zp, XmYm, XmZm, XmYp, XmZp, XpYm, XpZm, XpYp, XpZp, YmZm, YmZp, YpZm, YpZp 
         integer                              :: XmYmZm, XpYmZm, XmYpZm, XmYmZp, XpYpZp, XmYpZp, XpYmZp, XpYpZm
         integer                              :: countXm, countXp, countYm, countYp, countZm, countZp
         integer                              :: countXmYm, countXmZm, countXmYp, countXmZp, countXpYm, countXpZm, countXpYp, countXpZp, countYmZm, countYmZp, countYpZm, countYpZp
         real(8)                              :: Xmin, Xmax, Ymin, Ymax, Zmin, Zmax, tol
-        integer,allocatable,dimension(:,:)   :: TMatFull, TMatRed
+        integer                              :: countNulCols, nVals, count
+        integer,allocatable,dimension(:)     :: NulCols, Cols
         
         
         tol = 1.0D-6
@@ -506,90 +508,133 @@ module ModMultiscalePeriodicFEMSoE
         call this%AnalysisSettings%GetTotalNumberOfDOF(this%GlobalNodesList, nDOF)
         
         nDOFRed = nDOF - 3*(nNodBX+nNodBY+nNodBZ+(3*nNodBXY)+(3*nNodBXZ)+(3*nNodBYZ)+7)
-
-        allocate(TMatFull(nDOF,nDOF))
+        this%nDOF = nDOFRed
         
-        TMatFull = 0.0d0
+        allocate(NulCols(nDOF-nDOFRed))
+        NulCols = 0
+        
+        call SparseMatrixInit(TMatSparse , nDOF)
         
         do i=1,nDOF
-            TMatFull(i,i)=1
+            call SparseMatrixSetVal( i , i , 1.0d0 , TMatSparse )
         enddo
-                
+               
         !Impose free DOF of vertex XmYmZm
-        TMatFull(3*XmYmZm-2,3*XmYmZm-2)=1
-        TMatFull(3*XmYmZm-1,3*XmYmZm-1)=1
-        TMatFull(3*XmYmZm,3*XmYmZm)=1
+        call SparseMatrixSetVal( 3*XmYmZm-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYmZm-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYmZm , 3*XmYmZm , 1.0d0 , TMatSparse )
         !Impose periodicity on the remaining vertices
-        TMatFull(3*XpYmZm-2,3*XmYmZm-2)=1
-        TMatFull(3*XpYmZm-1,3*XmYmZm-1)=1
-        TMatFull(3*XpYmZm,3*XmYmZm)=1
-        TMatFull(3*XpYmZm-2,3*XpYmZm-2)=0
-        TMatFull(3*XpYmZm-1,3*XpYmZm-1)=0
-        TMatFull(3*XpYmZm,3*XpYmZm)=0
-        TMatFull(3*XmYpZm-2,3*XmYmZm-2)=1
-        TMatFull(3*XmYpZm-1,3*XmYmZm-1)=1
-        TMatFull(3*XmYpZm,3*XmYmZm)=1
-        TMatFull(3*XmYpZm-2,3*XmYpZm-2)=0
-        TMatFull(3*XmYpZm-1,3*XmYpZm-1)=0
-        TMatFull(3*XmYpZm,3*XmYpZm)=0
-        TMatFull(3*XmYmZp-2,3*XmYmZm-2)=1
-        TMatFull(3*XmYmZp-1,3*XmYmZm-1)=1
-        TMatFull(3*XmYmZp,3*XmYmZm)=1
-        TMatFull(3*XmYmZp-2,3*XmYmZp-2)=0
-        TMatFull(3*XmYmZp-1,3*XmYmZp-1)=0
-        TMatFull(3*XmYmZp,3*XmYmZp)=0
-        TMatFull(3*XpYpZp-2,3*XmYmZm-2)=1
-        TMatFull(3*XpYpZp-1,3*XmYmZm-1)=1
-        TMatFull(3*XpYpZp,3*XmYmZm)=1
-        TMatFull(3*XpYpZp-2,3*XpYpZp-2)=0
-        TMatFull(3*XpYpZp-1,3*XpYpZp-1)=0
-        TMatFull(3*XpYpZp,3*XpYpZp)=0
-        TMatFull(3*XmYpZp-2,3*XmYmZm-2)=1
-        TMatFull(3*XmYpZp-1,3*XmYmZm-1)=1
-        TMatFull(3*XmYpZp,3*XmYmZm)=1
-        TMatFull(3*XmYpZp-2,3*XmYpZp-2)=0
-        TMatFull(3*XmYpZp-1,3*XmYpZp-1)=0
-        TMatFull(3*XmYpZp,3*XmYpZp)=0
-        TMatFull(3*XpYmZp-2,3*XmYmZm-2)=1
-        TMatFull(3*XpYmZp-1,3*XmYmZm-1)=1
-        TMatFull(3*XpYmZp,3*XmYmZm)=1
-        TMatFull(3*XpYmZp-2,3*XpYmZp-2)=0
-        TMatFull(3*XpYmZp-1,3*XpYmZp-1)=0
-        TMatFull(3*XpYmZp,3*XpYmZp)=0
-        TMatFull(3*XpYpZm-2,3*XmYmZm-2)=1
-        TMatFull(3*XpYpZm-1,3*XmYmZm-1)=1
-        TMatFull(3*XpYpZm,3*XmYmZm)=1
-        TMatFull(3*XpYpZm-2,3*XpYpZm-2)=0
-        TMatFull(3*XpYpZm-1,3*XpYpZm-1)=0
-        TMatFull(3*XpYpZm,3*XpYpZm)=0
+        call SparseMatrixSetVal( 3*XpYmZm-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZm-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZm , 3*XmYmZm , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZm-2 , 3*XpYmZm-2 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZm-1 , 3*XpYmZm-1 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZm , 3*XpYmZm , 0.0d0 , TMatSparse )
+        NulCols(1)=3*XpYmZm-2
+        NulCols(2)=3*XpYmZm-1
+        NulCols(3)=3*XpYmZm
+
+        call SparseMatrixSetVal( 3*XmYpZm-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZm-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZm , 3*XmYmZm , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZm-2 , 3*XmYpZm-2 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZm-1 , 3*XmYpZm-1 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZm , 3*XmYpZm , 0.0d0 , TMatSparse )
+        NulCols(4)=3*XmYpZm-2
+        NulCols(5)=3*XmYpZm-1
+        NulCols(6)=3*XmYpZm
+
+        call SparseMatrixSetVal( 3*XmYmZp-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYmZp-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYmZp , 3*XmYmZm , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYmZp-2 , 3*XmYmZp-2 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYmZp-1 , 3*XmYmZp-1 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYmZp , 3*XmYmZp , 0.0d0 , TMatSparse )
+        NulCols(7)=3*XmYmZp-2
+        NulCols(8)=3*XmYmZp-1
+        NulCols(9)=3*XmYmZp
+
+        call SparseMatrixSetVal( 3*XpYpZp-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZp-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZp , 3*XmYmZm , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZp-2 , 3*XpYpZp-2 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZp-1 , 3*XpYpZp-1 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZp , 3*XpYpZp , 0.0d0 , TMatSparse )
+        NulCols(10)=3*XpYpZp-2
+        NulCols(11)=3*XpYpZp-1
+        NulCols(12)=3*XpYpZp
+        
+        call SparseMatrixSetVal( 3*XmYpZp-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZp-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZp , 3*XmYmZm , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZp-2 , 3*XmYpZp-2 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZp-1 , 3*XmYpZp-1 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XmYpZp , 3*XmYpZp , 0.0d0 , TMatSparse )
+        NulCols(13)=3*XmYpZp-2
+        NulCols(14)=3*XmYpZp-1
+        NulCols(15)=3*XmYpZp
+        
+        call SparseMatrixSetVal( 3*XpYmZp-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZp-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZp , 3*XmYmZm , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZp-2 , 3*XpYmZp-2 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZp-1 , 3*XpYmZp-1 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYmZp , 3*XpYmZp , 0.0d0 , TMatSparse )
+        NulCols(16)=3*XpYmZp-2
+        NulCols(17)=3*XpYmZp-1
+        NulCols(18)=3*XpYmZp
+
+        call SparseMatrixSetVal( 3*XpYpZm-2 , 3*XmYmZm-2 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZm-1 , 3*XmYmZm-1 , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZm , 3*XmYmZm , 1.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZm-2 , 3*XpYpZm-2 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZm-1 , 3*XpYpZm-1 , 0.0d0 , TMatSparse )
+        call SparseMatrixSetVal( 3*XpYpZm , 3*XpYpZm , 0.0d0 , TMatSparse )
+        NulCols(19)=3*XpYpZm-2
+        NulCols(20)=3*XpYpZm-1
+        NulCols(21)=3*XpYpZm
+        
+        countNulCols = 22
         
         !Periodicity of XY edges
         do m=1,nNodBXY
             !Find periodic nodes in XmYp, XpYp, XpYm and imposes periodicity
             do n=1,nNodBXY
                 if (abs(this%GlobalNodesList(XmYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<tol) then
-                    TMatFull(3*XmYp(n)-2,3*XmYm(m)-2)=1
-                    TMatFull(3*XmYp(n)-1,3*XmYm(m)-1)=1
-                    TMatFull(3*XmYp(n),3*XmYm(m))=1
-                    TMatFull(3*XmYp(n)-2,3*XmYp(n)-2)=0
-                    TMatFull(3*XmYp(n)-1,3*XmYp(n)-1)=0
-                    TMatFull(3*XmYp(n),3*XmYp(n))=0
+                    call SparseMatrixSetVal( 3*XmYp(n)-2 , 3*XmYm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmYp(n)-1 , 3*XmYm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmYp(n) , 3*XmYm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmYp(n)-2 , 3*XmYp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmYp(n)-1 , 3*XmYp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmYp(n) , 3*XmYp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*XmYp(n)-2
+                    NulCols(countNulCols+1) = 3*XmYp(n)-1
+                    NulCols(countNulCols+2) = 3*XmYp(n)
+                    countNulCols = countNulCols+3
                 endif
                 if (abs(this%GlobalNodesList(XpYp(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<tol) then
-                    TMatFull(3*XpYp(n)-2,3*XmYm(m)-2)=1
-                    TMatFull(3*XpYp(n)-1,3*XmYm(m)-1)=1
-                    TMatFull(3*XpYp(n),3*XmYm(m))=1
-                    TMatFull(3*XpYp(n)-2,3*XpYp(n)-2)=0
-                    TMatFull(3*XpYp(n)-1,3*XpYp(n)-1)=0
-                    TMatFull(3*XpYp(n),3*XpYp(n))=0
+                    call SparseMatrixSetVal( 3*XpYp(n)-2 , 3*XmYm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYp(n)-1 , 3*XmYm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYp(n) , 3*XmYm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYp(n)-2 , 3*XpYp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYp(n)-1 , 3*XpYp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYp(n) , 3*XpYp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*XpYp(n)-2
+                    NulCols(countNulCols+1) = 3*XpYp(n)-1
+                    NulCols(countNulCols+2) = 3*XpYp(n)
+                    countNulCols = countNulCols+3
                 endif
                 if (abs(this%GlobalNodesList(XpYm(n))%CoordX(3) - this%GlobalNodesList(XmYm(m))%CoordX(3))<tol) then
-                    TMatFull(3*XpYm(n)-2,3*XmYm(m)-2)=1
-                    TMatFull(3*XpYm(n)-1,3*XmYm(m)-1)=1
-                    TMatFull(3*XpYm(n),3*XmYm(m))=1
-                    TMatFull(3*XpYm(n)-2,3*XpYm(n)-2)=0
-                    TMatFull(3*XpYm(n)-1,3*XpYm(n)-1)=0
-                    TMatFull(3*XpYm(n),3*XpYm(n))=0
+                    call SparseMatrixSetVal( 3*XpYm(n)-2 , 3*XmYm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYm(n)-1 , 3*XmYm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYm(n) , 3*XmYm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYm(n)-2 , 3*XpYm(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYm(n)-1 , 3*XpYm(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpYm(n) , 3*XpYm(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*XpYm(n)-2
+                    NulCols(countNulCols+1) = 3*XpYm(n)-1
+                    NulCols(countNulCols+2) = 3*XpYm(n)
+                    countNulCols = countNulCols+3
                 endif
             enddo
         enddo
@@ -599,28 +644,40 @@ module ModMultiscalePeriodicFEMSoE
             !Find periodic nodes in XmZp, XpZp, XpZm and imposes periodicity
             do n=1,nNodBXZ
                 if (abs(this%GlobalNodesList(XmZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<tol) then
-                    TMatFull(3*XmZp(n)-2,3*XmZm(m)-2)=1
-                    TMatFull(3*XmZp(n)-1,3*XmZm(m)-1)=1
-                    TMatFull(3*XmZp(n),3*XmZm(m))=1
-                    TMatFull(3*XmZp(n)-2,3*XmZp(n)-2)=0
-                    TMatFull(3*XmZp(n)-1,3*XmZp(n)-1)=0
-                    TMatFull(3*XmZp(n),3*XmZp(n))=0
+                    call SparseMatrixSetVal( 3*XmZp(n)-2 , 3*XmZm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmZp(n)-1 , 3*XmZm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmZp(n) , 3*XmZm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmZp(n)-2 , 3*XmZp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmZp(n)-1 , 3*XmZp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XmZp(n) , 3*XmZp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*XmZp(n)-2
+                    NulCols(countNulCols+1) = 3*XmZp(n)-1
+                    NulCols(countNulCols+2) = 3*XmZp(n)
+                    countNulCols = countNulCols+3
                 endif
                 if (abs(this%GlobalNodesList(XpZp(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<tol) then
-                    TMatFull(3*XpZp(n)-2,3*XmZm(m)-2)=1
-                    TMatFull(3*XpZp(n)-1,3*XmZm(m)-1)=1
-                    TMatFull(3*XpZp(n),3*XmZm(m))=1
-                    TMatFull(3*XpZp(n)-2,3*XpZp(n)-2)=0
-                    TMatFull(3*XpZp(n)-1,3*XpZp(n)-1)=0
-                    TMatFull(3*XpZp(n),3*XpZp(n))=0
+                    call SparseMatrixSetVal( 3*XpZp(n)-2 , 3*XmZm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZp(n)-1 , 3*XmZm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZp(n), 3*XmZm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZp(n)-2 , 3*XpZp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZp(n)-1 , 3*XpZp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZp(n) , 3*XpZp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*XpZp(n)-2
+                    NulCols(countNulCols+1) = 3*XpZp(n)-1
+                    NulCols(countNulCols+2) = 3*XpZp(n)
+                    countNulCols = countNulCols+3
                 endif
                 if (abs(this%GlobalNodesList(XpZm(n))%CoordX(2) - this%GlobalNodesList(XmZm(m))%CoordX(2))<tol) then
-                    TMatFull(3*XpZm(n)-2,3*XmZm(m)-2)=1
-                    TMatFull(3*XpZm(n)-1,3*XmZm(m)-1)=1
-                    TMatFull(3*XpZm(n),3*XmZm(m))=1
-                    TMatFull(3*XpZm(n)-2,3*XpZm(n)-2)=0
-                    TMatFull(3*XpZm(n)-1,3*XpZm(n)-1)=0
-                    TMatFull(3*XpZm(n),3*XpZm(n))=0
+                    call SparseMatrixSetVal( 3*XpZm(n)-2 , 3*XmZm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZm(n)-1 , 3*XmZm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZm(n) , 3*XmZm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZm(n)-2 , 3*XpZm(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZm(n)-1 , 3*XpZm(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*XpZm(n) , 3*XpZm(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*XpZm(n)-2
+                    NulCols(countNulCols+1) = 3*XpZm(n)-1
+                    NulCols(countNulCols+2) = 3*XpZm(n)
+                    countNulCols = countNulCols+3
                 endif
             enddo
         enddo
@@ -630,28 +687,40 @@ module ModMultiscalePeriodicFEMSoE
             !Find periodic nodes in XmZp, XpZp, XpZm and imposes periodicity
             do n=1,nNodBYZ
                 if (abs(this%GlobalNodesList(YmZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<tol) then
-                    TMatFull(3*YmZp(n)-2,3*YmZm(m)-2)=1
-                    TMatFull(3*YmZp(n)-1,3*YmZm(m)-1)=1
-                    TMatFull(3*YmZp(n),3*YmZm(m))=1
-                    TMatFull(3*YmZp(n)-2,3*YmZp(n)-2)=0
-                    TMatFull(3*YmZp(n)-1,3*YmZp(n)-1)=0
-                    TMatFull(3*YmZp(n),3*YmZp(n))=0
+                    call SparseMatrixSetVal( 3*YmZp(n)-2 , 3*YmZm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YmZp(n)-1 , 3*YmZm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YmZp(n) , 3*YmZm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YmZp(n)-2 , 3*YmZp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YmZp(n)-1 , 3*YmZp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YmZp(n) , 3*YmZp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*YmZp(n)-2
+                    NulCols(countNulCols+1) = 3*YmZp(n)-1
+                    NulCols(countNulCols+2) = 3*YmZp(n)
+                    countNulCols = countNulCols+3
                 endif
                 if (abs(this%GlobalNodesList(YpZp(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<tol) then
-                    TMatFull(3*YpZp(n)-2,3*YmZm(m)-2)=1
-                    TMatFull(3*YpZp(n)-1,3*YmZm(m)-1)=1
-                    TMatFull(3*YpZp(n),3*YmZm(m))=1
-                    TMatFull(3*YpZp(n)-2,3*YpZp(n)-2)=0
-                    TMatFull(3*YpZp(n)-1,3*YpZp(n)-1)=0
-                    TMatFull(3*YpZp(n),3*YpZp(n))=0
+                    call SparseMatrixSetVal( 3*YpZp(n)-2 , 3*YmZm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZp(n)-1 , 3*YmZm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZp(n) , 3*YmZm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZp(n)-2 , 3*YpZp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZp(n)-1 , 3*YpZp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZp(n) , 3*YpZp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*YpZp(n)-2
+                    NulCols(countNulCols+1) = 3*YpZp(n)-1
+                    NulCols(countNulCols+2) = 3*YpZp(n)
+                    countNulCols = countNulCols+3
                 endif
                 if (abs(this%GlobalNodesList(YpZm(n))%CoordX(1) - this%GlobalNodesList(YmZm(m))%CoordX(1))<tol) then
-                    TMatFull(3*YpZm(n)-2,3*YmZm(m)-2)=1
-                    TMatFull(3*YpZm(n)-1,3*YmZm(m)-1)=1
-                    TMatFull(3*YpZm(n),3*YmZm(m))=1
-                    TMatFull(3*YpZm(n)-2,3*YpZm(n)-2)=0
-                    TMatFull(3*YpZm(n)-1,3*YpZm(n)-1)=0
-                    TMatFull(3*YpZm(n),3*YpZm(n))=0
+                    call SparseMatrixSetVal( 3*YpZm(n)-2 , 3*YmZm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZm(n)-1 , 3*YmZm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZm(n) , 3*YmZm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZm(n)-2 , 3*YpZm(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZm(n)-1 , 3*YpZm(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*YpZm(n) , 3*YpZm(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*YpZm(n)-2
+                    NulCols(countNulCols+1) = 3*YpZm(n)-1
+                    NulCols(countNulCols+2) = 3*YpZm(n)
+                    countNulCols = countNulCols+3
                 endif
             enddo
         enddo
@@ -661,12 +730,16 @@ module ModMultiscalePeriodicFEMSoE
             !Find periodic nodes in Xp and imposes periodicity
             do n=1,nNodBX
                 if ((abs(this%GlobalNodesList(Xp(n))%CoordX(2) - this%GlobalNodesList(Xm(m))%CoordX(2))<tol) .AND. (abs(this%GlobalNodesList(Xp(n))%CoordX(3) - this%GlobalNodesList(Xm(m))%CoordX(3))<tol)) then
-                    TMatFull(3*Xp(n)-2,3*Xm(m)-2)=1
-                    TMatFull(3*Xp(n)-1,3*Xm(m)-1)=1
-                    TMatFull(3*Xp(n),3*Xm(m))=1
-                    TMatFull(3*Xp(n)-2,3*Xp(n)-2)=0
-                    TMatFull(3*Xp(n)-1,3*Xp(n)-1)=0
-                    TMatFull(3*Xp(n),3*Xp(n))=0
+                    call SparseMatrixSetVal( 3*Xp(n)-2 , 3*Xm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Xp(n)-1 , 3*Xm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Xp(n) , 3*Xm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Xp(n)-2 , 3*Xp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Xp(n)-1 , 3*Xp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Xp(n) , 3*Xp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*Xp(n)-2
+                    NulCols(countNulCols+1) = 3*Xp(n)-1
+                    NulCols(countNulCols+2) = 3*Xp(n)
+                    countNulCols = countNulCols+3
                 endif
             enddo
         enddo
@@ -676,12 +749,16 @@ module ModMultiscalePeriodicFEMSoE
             !Find periodic nodes in Yp and imposes periodicity
             do n=1,nNodBY
                 if ((abs(this%GlobalNodesList(Yp(n))%CoordX(1) - this%GlobalNodesList(Ym(m))%CoordX(1))<tol) .AND. (abs(this%GlobalNodesList(Yp(n))%CoordX(3) - this%GlobalNodesList(Ym(m))%CoordX(3))<tol)) then
-                    TMatFull(3*Yp(n)-2,3*Ym(m)-2)=1
-                    TMatFull(3*Yp(n)-1,3*Ym(m)-1)=1
-                    TMatFull(3*Yp(n),3*Ym(m))=1
-                    TMatFull(3*Yp(n)-2,3*Yp(n)-2)=0
-                    TMatFull(3*Yp(n)-1,3*Yp(n)-1)=0
-                    TMatFull(3*Yp(n),3*Yp(n))=0
+                    call SparseMatrixSetVal( 3*Yp(n)-2 , 3*Ym(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Yp(n)-1 , 3*Ym(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Yp(n) , 3*Ym(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Yp(n)-2 , 3*Yp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Yp(n)-1 , 3*Yp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Yp(n) , 3*Yp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*Yp(n)-2
+                    NulCols(countNulCols+1) = 3*Yp(n)-1
+                    NulCols(countNulCols+2) = 3*Yp(n)
+                    countNulCols = countNulCols+3
                 endif
             enddo
         enddo
@@ -691,62 +768,52 @@ module ModMultiscalePeriodicFEMSoE
             !Finds periodic nodes in Zp and imposes periodicity
             do n=1,nNodBZ
                 if ((abs(this%GlobalNodesList(Zp(n))%CoordX(1) - this%GlobalNodesList(Zm(m))%CoordX(1))<tol) .AND. (abs(this%GlobalNodesList(Zp(n))%CoordX(2) - this%GlobalNodesList(Zm(m))%CoordX(2))<tol)) then
-                    TMatFull(3*Zp(n)-2,3*Zm(m)-2)=1
-                    TMatFull(3*Zp(n)-1,3*Zm(m)-1)=1
-                    TMatFull(3*Zp(n),3*Zm(m))=1
-                    TMatFull(3*Zp(n)-2,3*Zp(n)-2)=0
-                    TMatFull(3*Zp(n)-1,3*Zp(n)-1)=0
-                    TMatFull(3*Zp(n),3*Zp(n))=0
-                endif
-            enddo
-        enddo
-
-        allocate(TMatRed(nDOF,nDOFRed))
-        col = 1
-        do j=1,nDOF
-            if (maxval(TMatFull(:,j))>0) then
-                TMatRed(:,col) = TMatFull(:,j)
-                col = col+1
-            endif
-        enddo
-        
-        !Output matrix and release memory
-        !call OutputIntMatrix(TMatFull,'TMatFull.txt')
-        deallocate(TMatFull)
-        
-        call SparseMatrixInit(TMatSparse , nDOF)
-        
-        do i=1,nDOF
-            do j=1,nDOFRed
-                if (TMatRed(i,j)>0) then
-                    call SparseMatrixSetVal( i , j , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Zp(n)-2 , 3*Zm(m)-2 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Zp(n)-1 , 3*Zm(m)-1 , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Zp(n) , 3*Zm(m) , 1.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Zp(n)-2 , 3*Zp(n)-2 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Zp(n)-1 , 3*Zp(n)-1 , 0.0d0 , TMatSparse )
+                    call SparseMatrixSetVal( 3*Zp(n) , 3*Zp(n) , 0.0d0 , TMatSparse )
+                    NulCols(countNulCols) = 3*Zp(n)-2
+                    NulCols(countNulCols+1) = 3*Zp(n)-1
+                    NulCols(countNulCols+2) = 3*Zp(n)
+                    countNulCols = countNulCols+3
                 endif
             enddo
         enddo
         
-        !Identity
-        !do i=1,nDOF
-        !    do j=1,nDOF
-        !        if (i==j) then
-        !            call SparseMatrixSetVal( i , j , 1.0d0 , TMatSparse )
-        !        endif
-        !    enddo
-        !enddo
-        !nDOFRed = nDOF
-        
-        !Output matrix and release memory
-        !call OutputIntMatrix(TMatRed,'TMatRed.txt')
-        deallocate(TMatRed)
+        call sortqq(LOC(NulCols),size(NulCols),SRT$INTEGER4)
 
         !Converting the sparse matrix to coordinate format (used by Pardiso Sparse Solver)
         call ConvertToCoordinateFormat( TMatSparse , this%TMat%Row , this%TMat%Col , this%TMat%Val , this%TMat%RowMap)
-
-        !Output matrix and release memory
-        !call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
+        
+        !Release memory
         call SparseMatrixKill(TMatSparse)
         
-        this%nDOF = nDOFRed
+        !Correct column indices
+        do i=1,nDOF
+            nVals = size(this%TMat%Val(this%TMat%RowMap(i):(this%TMat%RowMap(i+1)-1)))
+            allocate(Cols(nVals))
+            Cols = this%TMat%Col(this%TMat%RowMap(i):(this%TMat%RowMap(i+1)-1))
+            do j=1,size(Cols)
+                count=0
+                if (Cols(j) .le. NulCols(size(NulCols))) then
+                    do while (Cols(j) > NulCols(count+1))
+                        count = count+1
+                    enddo
+                else
+                    count = size(NulCols)
+                endif
+            Cols(j) = Cols(j) - count
+            enddo
+            this%TMat%Col(this%TMat%RowMap(i):(this%TMat%RowMap(i+1)-1)) = Cols
+            deallocate(Cols)
+        enddo
 
+        !Output matrix
+        !call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
+        
+        !Fix vertices
         allocate(this%verticesDOF(24))
         
         this%verticesDOF(1)=3*XmYmZm-2
@@ -784,37 +851,6 @@ module ModMultiscalePeriodicFEMSoE
         
     end subroutine
 
-
-    !---------------------------------------------------------------------------------------------------------------------
-    
-    subroutine OutputIntMatrix(Mat,filename)
-        integer,allocatable,dimension(:,:) :: Mat        
-        character(len=*)                   :: filename
-        character(len=30)                  :: Form
-        integer                            :: nLin, nCol, FileID, i, j
-
-        nLin = size(Mat,1)
-        nCol = size(Mat,2)
-        
-        if (nCol == 24) then
-            Form = '24(1X,I1)'
-        elseif (nCol == 81) then
-            Form = '81(1X,I1)'
-        elseif (nCol == 192) then
-            Form = '192(1X,I1)'
-        elseif (nCol == 375) then
-            Form = '375(1X,I1)'
-        endif
-                
-        FileID = 73
-        open(FileID,file=filename,status='unknown')
-        do i=1,nLin
-            write(FileID,'('//trim(Form)//')') (Mat(i,j), j=1,nCol)
-        enddo
-        close(FileID)
-        
-    end subroutine
-    
     !---------------------------------------------------------------------------------------------------------------------
     
     subroutine OutputRealMatrix(Mat,filename)
