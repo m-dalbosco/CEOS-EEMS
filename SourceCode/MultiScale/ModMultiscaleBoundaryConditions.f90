@@ -338,7 +338,8 @@ module ModMultiscaleBoundaryConditions
         do i = 1,3
             do j = 1,3
 
-                DeltaFext(k) = this%NodalMultiscaleDispBC(1)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%FinalVal
+                Fext(k) = this%NodalMultiscaleDispBC(1)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%InitVal
+                DeltaFext(k) = this%NodalMultiscaleDispBC(1)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%FinalVal - this%NodalMultiscaleDispBC(1)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%InitVal
 
                 k = k + 1
 

@@ -1720,11 +1720,9 @@ module FEMAnalysis
                     write(*,'(4x,a,i3,a,i3,a)')'Step: ',ST,' (LC: ',LC,')'
                     write(*,*)''
 
-                    ! Rotina usada somente para transportar o gradiente de deformação macro, no instante corrente (n+1), na variável DeltaFext.
+                    ! Rotina usada somente para obter Fmacro no instante anterior (n), na variável Fext_alpha0, e o deltaFmacro na variável DeltaFext
                     !-------------------------------------------------------------
                     call BC%GetBoundaryConditions(AnalysisSettings, LC, ST, Fext_alpha0, DeltaFext,FEMSoE%DispDOF, X, DeltaUPresc)              
-            
-                    FEMSoE%Fmacro_current(1:9) = DeltaFext(1:9)
 
                     !-------------------------------------------------------------
 
@@ -1746,7 +1744,7 @@ module FEMAnalysis
 
 
                         FEMSoE % Time = Time_alpha0 + alpha*DeltaTime
-                        FEMSoE%Fmacro_current(1:9) = alpha*DeltaFext(1:9)
+                        FEMSoE%Fmacro_current(1:9) = Fext_alpha0 + alpha*DeltaFext(1:9)
 
                         call NLSolver%Solve( FEMSoE , XGuess = Xconverged , X=X )
 
