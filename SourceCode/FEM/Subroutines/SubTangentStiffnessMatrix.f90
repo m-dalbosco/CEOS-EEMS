@@ -88,28 +88,6 @@ subroutine TangentStiffnessMatrix( AnalysisSettings , ElementList , nDOF, Kg )
             !---------------------------------------------------------------------------------
             
         elseif (AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
-
-
-            ! Assemble Tangent Stiffness Matrix - Multiscale Periodic
-            !---------------------------------------------------------------------------------
-            do  e = 1, size( ElementList )
-
-                call ElementList(e)%El%GetElementNumberDOF( AnalysisSettings , nDOFel )
-
-                Ke => Ke_Memory( 1:nDOFel , 1:nDOFel )
-                GM => GM_Memory( 1:nDOFel )
-
-                call ElementList(e)%El%GetGlobalMapping( AnalysisSettings, GM )
-
-                call ElementList(e)%El%ElementStiffnessMatrix( Ke, AnalysisSettings )
-
-                 call AssembleGlobalMatrix( GM, Ke, Kg )
-                 !call AssembleGlobalMatrixUpperTriangular( GM, Ke, Kg )
-
-            enddo
-            !---------------------------------------------------------------------------------
-
-        elseif (AnalysisSettings%MultiscaleModel == MultiscaleModels%Periodic) then
             
             ! Assemble Tangent (Full) Stiffness Matrix - Multiscale Periodic
             !---------------------------------------------------------------------------------
