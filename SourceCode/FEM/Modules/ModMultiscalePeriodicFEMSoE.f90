@@ -81,11 +81,24 @@ module ModMultiscalePeriodicFEMSoE
         use MathRoutines
         class(ClassMultiscalePeriodicFEMSoE)       :: this
         class(ClassGlobalSparseMatrix),pointer     :: G
-        type(ClassGlobalSparseMatrix)              :: KgAux
+        type(ClassGlobalSparseMatrix)              :: KgAux,KgRed
+        type(SparseMatrix)                         :: KgRedSparse
         real(8),dimension(:)                       :: X,R         !X = full system, R = reduced system
         real(8),allocatable,dimension(:)           :: RFull       !Full system
-        integer :: nDOF, nDOFRed, info, nzmax, ValDum, ColDum, LengthKgAuxVal, LengthKgRedVal
-                     
+        integer :: nDOF, nDOFRed, info, nzmax, ValDum, ColDum, LengthKgAuxVal, LengthKgRedVal, i, j, nVals
+        integer,allocatable,dimension(:)           :: Cols
+        
+        !Clean KgRed (in case number of elements changes)
+        if (associated(this%KgRed%RowMap)) then
+            deallocate(this%KgRed%RowMap)
+        endif
+        if (associated(this%KgRed%Val)) then
+            deallocate(this%KgRed%Val)
+        endif
+        if (associated(this%KgRed%Col)) then
+            deallocate(this%KgRed%Col)
+        endif        
+        
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
 
         nDOFRed = this%nDOF !DOF reduced system
@@ -103,15 +116,6 @@ module ModMultiscalePeriodicFEMSoE
         RFull = -RFull
                 
         allocate(KgAux%RowMap(nDOFRed+1))
-        if (associated(this%KgRed%RowMap)) then
-            deallocate(this%KgRed%RowMap)
-        endif
-        if (associated(this%KgRed%Val)) then
-            deallocate(this%KgRed%Val)
-        endif
-        if (associated(this%KgRed%Col)) then
-            deallocate(this%KgRed%Col)
-        endif
                
         nzmax = nDOF*nDOFRed
         !Calculate length of KgAux = Tmat'*Kg
@@ -126,22 +130,45 @@ module ModMultiscalePeriodicFEMSoE
         !Print for checking
         !call OutputSparseMatrix(KgAux,'KgAux.txt',nDOFRed,nDOF)
         
-        allocate(this%KgRed%RowMap(nDOFRed+1))
+        allocate(KgRed%RowMap(nDOFRed+1))
         !Calculate length of KgRed = KgAux*TMat
-        call mkl_dcsrmultcsr('N', 1, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, ValDum, ColDum, this%KgRed%RowMap, nzmax, info)
-        LengthKgRedVal = this%KgRed%RowMap(nDOFRed+1)-1
-        allocate(this%KgRed%Val(LengthKgRedVal))
-        allocate(this%KgRed%Col(LengthKgRedVal))
-        this%KgRed%Val = 0.0d0
-        this%KgRed%Col = 0
+        call mkl_dcsrmultcsr('N', 1, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, ValDum, ColDum, KgRed%RowMap, nzmax, info)
+        LengthKgRedVal = KgRed%RowMap(nDOFRed+1)-1
+        allocate(KgRed%Val(LengthKgRedVal))
+        allocate(KgRed%Col(LengthKgRedVal))
+        KgRed%Val = 0.0d0
+        KgRed%Col = 0
         !Calculate KgRed = KgAux*TMat
-        call mkl_dcsrmultcsr('N', 2, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%KgRed%Val, this%KgRed%Col, this%KgRed%RowMap, nzmax, info)
+        call mkl_dcsrmultcsr('N', 2, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, KgRed%Val, KgRed%Col, KgRed%RowMap, nzmax, info)
         !Print for checking
-        !call OutputSparseMatrix(this%KgRed,'KgRed.txt',nDOFRed,nDOFRed)
-        
-        G => this%KgRed
+        !call OutputSparseMatrix(KgRed,'KgRedFull.txt',nDOFRed,nDOFRed)
         
         deallocate(KgAux%RowMap,KgAux%Val,KgAux%Col)
+        
+        call SparseMatrixInit(KgRedSparse , nDOFRed)
+        
+        do i=1,nDOFRed
+            nVals = size(KgRed%Val(KgRed%RowMap(i):(KgRed%RowMap(i+1)-1)))
+            allocate(Cols(nVals))
+            Cols = KgRed%Col(KgRed%RowMap(i):(KgRed%RowMap(i+1)-1))
+            do j=1,size(Cols)
+                if (Cols(j) .ge. i) then
+                    call SparseMatrixSetVal( i , Cols(j) , KgRed%Val(KgRed%RowMap(i) + j - 1) , KgRedSparse )
+                    call SparseMatrixSetVal( Cols(j) , i , KgRed%Val(KgRed%RowMap(i) + j - 1) , KgRedSparse )
+                endif
+            enddo
+            deallocate(Cols)
+        enddo
+        
+        deallocate(KgRed%RowMap,KgRed%Val,KgRed%Col)
+
+        call ConvertToCoordinateFormatUpperTriangular( KgRedSparse , this%KgRed%Row , this%KgRed%Col , this%KgRed%Val , this%KgRed%RowMap)
+        !Print for checking
+        !call OutputSparseMatrix(this%KgRed,'KgRedFinal.txt',nDOFRed,nDOFRed)
+        
+        call SparseMatrixKill(KgRedSparse)
+        
+        G => this%KgRed
         
         R = 0.0d0
         ! Calculate R (red) from RFull
