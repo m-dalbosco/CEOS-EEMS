@@ -19,7 +19,8 @@ module NeoHookeanFiberRecruit
     ! --------------------------------------------------------------------------------------------
     use ConstitutiveModel
     use ModStatus
-    use MathRoutines    
+    use MathRoutines
+    use ModContinuumMechanics
     implicit none
 
 
@@ -614,7 +615,7 @@ module NeoHookeanFiberRecruit
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             integer, parameter :: Scalar=1,Vector=2,Tensor=3
-            real (8) :: h , c(6), I(3,3), e(3,3), eV(6)
+            real (8) :: h , c(6), I(3,3), e(3,3), eV(6), levm
 		    !************************************************************************************
 
 		    !___________________   WARNIG! DO NOT CHANGE OR ERASE THIS BLOCK    _________________
@@ -648,7 +649,7 @@ module NeoHookeanFiberRecruit
             
                 case(0)
             
-                    Length = 2
+                    Length = 3
             
                 case(1)
             
@@ -669,6 +670,15 @@ module NeoHookeanFiberRecruit
                     eV = Convert_to_Voigt(e)
                     Variable(1:Length) = eV(1:Length)
                     !-------------------------------------------------------------
+                    
+                case (3)
+            
+                    Name='von Mises logarithmic strain'
+                    VariableType = Scalar
+                    Length=1
+
+                    levm = vonMisesMeasure(StrainMeasure(this%F,StrainID=5))
+                    Variable = levm
             
                 case default
                     call Error("Error retrieving result :: GetResult")
