@@ -615,7 +615,7 @@ module NeoHookeanFiberRecruit
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             integer, parameter :: Scalar=1,Vector=2,Tensor=3
-            real (8) :: h , c(6), I(3,3), e(3,3), eV(6), levm
+            real (8) :: h , c(6), I(3,3), e(3,3), eV(6), levm, detF
 		    !************************************************************************************
 
 		    !___________________   WARNIG! DO NOT CHANGE OR ERASE THIS BLOCK    _________________
@@ -649,7 +649,7 @@ module NeoHookeanFiberRecruit
             
                 case(0)
             
-                    Length = 3
+                    Length = 4
             
                 case(1)
             
@@ -679,6 +679,15 @@ module NeoHookeanFiberRecruit
 
                     levm = vonMisesMeasure(StrainMeasure(this%F,StrainID=5))
                     Variable = levm
+                    
+                case (4)
+            
+                    Name='Volume Ratio'
+                    VariableType = Scalar
+                    Length=1
+
+                    detF = det(this%F)
+                    Variable = detF
             
                 case default
                     call Error("Error retrieving result :: GetResult")
