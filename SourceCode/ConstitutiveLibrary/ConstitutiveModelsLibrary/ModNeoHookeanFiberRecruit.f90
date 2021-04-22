@@ -31,7 +31,7 @@ module NeoHookeanFiberRecruit
 
         ! Variables of material parameters
         !----------------------------------------------------------------------------------------------
-        real(8) :: Gm, Km, Gf
+        real(8) :: Gm, Km
 
     end type
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -186,7 +186,7 @@ module NeoHookeanFiberRecruit
 
             ! Internal variables
             ! ---------------------------------------------------------------------------------
-		    character(len=100), dimension(3) :: ListOfOptions, ListOfValues
+		    character(len=100), dimension(2) :: ListOfOptions, ListOfValues
 		    logical, dimension(2)            :: FoundOption
 		    integer                          :: i
 		    !************************************************************************************
@@ -202,7 +202,7 @@ module NeoHookeanFiberRecruit
 
             ! Inform how the properties are shown in the "Settings" file.
             !------------------------------------------------------------------------------------
-            ListOfOptions=["Gm","Km","Gf"]
+            ListOfOptions=["Gm","Km"]
             !------------------------------------------------------------------------------------
 
 		    !___________________   WARNIG! DO NOT CHANGE OR ERASE THIS BLOCK    _________________
@@ -214,7 +214,6 @@ module NeoHookeanFiberRecruit
             !------------------------------------------------------------------------------------
             this%Properties%Gm = ListOfValues(1)
             this%Properties%Km = ListOfValues(2)
-            this%Properties%Gf = ListOfValues(3)
             !------------------------------------------------------------------------------------
 
 
@@ -286,7 +285,7 @@ module NeoHookeanFiberRecruit
             ! -----------------------------------------------------------------------------------
             real(8) :: F(3,3), C(3,3), Cinv(3,3),Ciso(3,3), I(3,3), S(3,3), Sfric(3,3), devSfric(3,3)
             real(8) :: mX(3), A(3,3)
-            real(8) :: J, p, Km, Gm, Gf, I4, I4r
+            real(8) :: J, p, Km, Gm, Gf, I4, I4r, Ef
 
 		    !************************************************************************************
 
@@ -306,10 +305,10 @@ module NeoHookeanFiberRecruit
             ! -----------------------------------------------------------------------------------
             Km = this%Properties%Km
             Gm = this%Properties%Gm
-            Gf = this%Properties%Gf
             F  = this%F
             mX = this%AdditionalVariables%mX
             I4r = this%AdditionalVariables%I4r
+            Ef = this%AdditionalVariables%Ef
             
             ! -----------------------------------------------------------------------------------
             ! Kinematic Variables - Calculated in 3D Tensorial Format
@@ -373,7 +372,7 @@ module NeoHookeanFiberRecruit
                 if (I4 .gt. I4r) then
                 
                     !Fiber Second Piola stress
-                    S = Gf*(1-sqrt(I4r/I4))*A
+                    S = Ef*(1-sqrt(I4r/I4))*A
                 
                     S = matmul(matmul(F,S),transpose(F))/J
                     this%Stress = Convert_to_Voigt_3D_Sym( S )
@@ -420,7 +419,7 @@ module NeoHookeanFiberRecruit
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: J, p, Km, Gm, Gf, d2PSIvol_dJ2, I4, I4r
+            real(8) :: J, p, Km, Gm, Ef, d2PSIvol_dJ2, I4, I4r
             real(8) :: F(3,3), C(3,3),Cinv(3,3), Ciso(3,3), Sfric(3,3), I(3,3)
             
             real(8) :: mX(3), A(3,3), Avoigt(6)
@@ -440,10 +439,10 @@ module NeoHookeanFiberRecruit
             ! -----------------------------------------------------------------------------------
             Km = this%Properties%Km
             Gm = this%Properties%Gm
-            Gf = this%Properties%Gf
             F  = this%F
             mX = this%AdditionalVariables%mX
             I4r = this%AdditionalVariables%I4r
+            Ef = this%AdditionalVariables%Ef
             
             ! -----------------------------------------------------------------------------------
 
@@ -547,7 +546,7 @@ module NeoHookeanFiberRecruit
                 if (I4 .gt. I4r) then
                 
                     ! Fiber material tangent modulus
-                    Daux = (Gf/I4)*sqrt(I4r/I4)*Ball_Voigt(Avoigt,Avoigt)
+                    Daux = (Ef/I4)*sqrt(I4r/I4)*Ball_Voigt(Avoigt,Avoigt)
                 
                 else
                     

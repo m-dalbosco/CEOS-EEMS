@@ -2610,11 +2610,11 @@ module FEMAnalysis
 
             ! Input variables
             ! -----------------------------------------------------------------------------------
-            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0, w, I4r
+            real(8) :: R, L, pitch, hand, theta, Xgp, X0ref, tXgp, norm_mX, A0, L0, w, I4r, Ef
             real(8) :: mX(3), IP(3), NodalValuesX(50)
             integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes, i, j, nGP, El_ID
             
-            real(8),dimension(10) :: FiberData
+            real(8),dimension(11) :: FiberData
             logical               :: file_exists
             character(len=36)    :: line
 
@@ -2656,10 +2656,14 @@ module FEMAnalysis
                                     mX(3) = 0.0d0
                                     A0 = 0.0d0
                                     L0 = 0.0d0
+                                    I4r = 0.0d0
+                                    Ef = 0.0d0
                 
                                     this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
                                     this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
                                     this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
+                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%I4r = I4r
+                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%I4r = Ef
                     
                                 enddo
                             
@@ -2700,6 +2704,7 @@ module FEMAnalysis
                                     L0 = FiberData(8)
                                     A0 = FiberData(9)
                                     I4r = FiberData(10)
+                                    Ef = FiberData(11)
                                             
                                     this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord = IP
                                     this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight = w
@@ -2708,6 +2713,7 @@ module FEMAnalysis
                                     this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
                                     this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
                                     this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%I4r = I4r
+                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%Ef = Ef
 
                                 enddo
 
