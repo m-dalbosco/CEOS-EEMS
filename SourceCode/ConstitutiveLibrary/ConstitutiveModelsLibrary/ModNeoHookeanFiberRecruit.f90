@@ -614,7 +614,7 @@ module NeoHookeanFiberRecruit
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             integer, parameter :: Scalar=1,Vector=2,Tensor=3
-            real (8) :: h , c(6), I(3,3), e(3,3), eV(6), levm, detF
+            real (8) :: h , c(6), I(3,3), e(3,3), eV(6), levm, detF, p
 		    !************************************************************************************
 
 		    !___________________   WARNIG! DO NOT CHANGE OR ERASE THIS BLOCK    _________________
@@ -648,7 +648,7 @@ module NeoHookeanFiberRecruit
             
                 case(0)
             
-                    Length = 4
+                    Length = 5
             
                 case(1)
             
@@ -687,6 +687,15 @@ module NeoHookeanFiberRecruit
 
                     detF = det(this%F)
                     Variable = detF
+                    
+                case (5)
+                    
+                    Name = 'Pressure'
+                    VariableType = Scalar
+                    Length=1
+                    
+                    p = this%Properties%Km*( det(this%F) - 1.0d0  )
+                    Variable = p
             
                 case default
                     call Error("Error retrieving result :: GetResult")
