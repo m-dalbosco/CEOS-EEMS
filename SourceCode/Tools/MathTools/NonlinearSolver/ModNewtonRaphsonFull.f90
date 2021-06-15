@@ -50,7 +50,7 @@ contains
         real(8),dimension(:)          :: Xguess , X
 
         integer :: it, i
-        real(8) :: normR , norma
+        real(8) :: normR , norma, eta
         real(8),allocatable,dimension(:) :: R , DX, DXFull
 
         real(8),dimension(:,:),pointer :: GFull
@@ -145,16 +145,21 @@ contains
                     call this%LinearSolver%Solve(GSparse, -R, DX)
                 case default
                 end select
-                
+
+            if (it>15) then
+                eta = (sqrt(5.0D0)-1)/2
+            else
+                eta = 1.0D0
+            endif
                 
             !---------------------------------------------------------------------------------------------------------------
             ! Update Unknown Variable and Additional Variables
             !---------------------------------------------------------------------------------------------------------------
             if (SOE%isPeriodic) then
                 call SOE%ExpandResult(DX,DXFull)
-                X = X + DXFull
+                X = X + eta*DXFull
             else
-                X = X + DX
+                X = X + eta*DX
             endif
 
             call SOE%PostUpdate(X)
