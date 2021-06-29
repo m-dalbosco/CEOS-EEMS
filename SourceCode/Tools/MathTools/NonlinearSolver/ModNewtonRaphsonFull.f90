@@ -148,6 +148,11 @@ contains
 
             if (it>15) then
                 eta = (sqrt(5.0D0)-1)/2
+                if (it==16) then
+                    write(*,*)
+                    write(*,'(12x,a)') 'More than 15 attempts. Possible stationary point. Attempting to regularize...'
+                    write(*,*)
+                endif
             else
                 eta = 1.0D0
             endif
