@@ -1570,6 +1570,10 @@ module FEMAnalysis
                             !---------------------------------------------------------------------------
                         ELSE
 
+                            Uconverged = U
+                            Ubar_alpha0 = UConverged - alpha*DeltaUPresc
+                            FEMSoE % UConverged = UConverged
+                            
                             SubStep = SubStep + 1
 
                             alpha_aux = alpha_min
@@ -1577,8 +1581,6 @@ module FEMAnalysis
                             alpha_min = alpha
 
                             alpha = min(alpha + GR*(alpha - alpha_aux),1.0d0)
-
-                            Uconverged = U
 
                             write(*,'(12x,a,i3,a,f7.4,a)') 'SubStep: ',SubStep,' (Alpha: ',alpha,')'
 
