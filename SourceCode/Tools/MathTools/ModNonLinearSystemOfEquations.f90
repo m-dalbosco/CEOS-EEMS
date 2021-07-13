@@ -56,9 +56,10 @@ module modNonLinearSystemOfEquations
         stop "ReduceSystem Not Implemented"
     end subroutine
 !__________________________________________________________________________________________________
-    subroutine ExpandResultBase(this,Rred,Rfull) !For systems with periodicity
+    subroutine ExpandResultBase(this,Rred,Rfull,it) !For systems with periodicity
         class(ClassNonLinearSystemOfEquations)::this
         real(8),dimension(:)::Rred,Rfull
+        integer::it
         stop "ExpandResult Not Implemented"
     end subroutine    
     

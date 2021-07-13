@@ -13,7 +13,7 @@ module ModMultiscalePeriodicFEMSoE
 
     type , extends(ClassNonLinearSystemOfEquations) :: ClassMultiscalePeriodicFEMSoE
 
-        real(8), dimension(:), allocatable                   :: Fint , Fext , UBar, UConverged
+        real(8), dimension(:), allocatable                   :: Fint , Fext , UTay1, UTay0
         real(8)                                              :: Time
         integer, dimension(:), pointer                       :: DispDOF
         integer, dimension(:), allocatable                   :: verticesDOF
@@ -53,17 +53,14 @@ module ModMultiscalePeriodicFEMSoE
         real(8),dimension(:) :: X,R
 
             ! Update stress and internal variables
-            if (this%it == 0) then
-                call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, this%UConverged, this%Status)
-            else
-                call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, X, this%Status)
-            endif
+            call SolveConstitutiveModel( this%ElementList , this%AnalysisSettings , this%Time, X, this%Status)
 
             ! Constitutive Model Failed. Used for Cut Back Strategy
             if (this%Status%Error ) then
                 return
             endif
 
+            ! Internal Force
             call InternalForce(this%ElementList , this%AnalysisSettings , this%Fint, this%Status)
 
             ! det(Jacobian Matrix)<=0 .Used for Cut Back Strategy
@@ -112,7 +109,7 @@ module ModMultiscalePeriodicFEMSoE
         ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R!!!
         RFull = this%Fint
         RFull = -RFull
-        call this%BC%ApplyBoundaryConditionsNEW(  this%Kg , RFull , this%DispDOF, this%Ubar , this%UConverged, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
+        call this%BC%ApplyBoundaryConditionsNEW(  this%Kg , RFull , this%DispDOF, this%UTay1 , this%UTay0, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
         RFull = -RFull
                 
         allocate(KgAux%RowMap(nDOFRed+1))
@@ -191,19 +188,29 @@ module ModMultiscalePeriodicFEMSoE
 
 !--------------------------------------------------------------------------------------------------
     
-    subroutine ExpandFluctuation(this,Rred,Rfull)
+    subroutine ExpandFluctuation(this,Rred,Rfull,it)
 
         class(ClassMultiscalePeriodicFEMSoE) :: this
-        real(8),dimension(:) :: Rred,Rfull !DX, DXFull
-        integer :: nDOF, nDOFRed
+        real(8),dimension(:)                 :: Rred,Rfull !DX, DXFull
+        real(8),allocatable,dimension(:)     :: RfullAux
+        integer :: nDOF, nDOFRed, it
         
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
         
         nDOFRed = this%nDOF !DOF reduced system
         
-        Rfull = 0.0d0
-        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), Rred, 0.0d0, Rfull) 
-
+        allocate(RfullAux(nDOF))
+        RfullAux = 0.0d0 !Calculates full fluctuations
+        call mkl_dcsrmv('N', nDOF, nDOFRed, 1.0d0, this%TMatDescr, this%TMat%Val, this%TMat%Col, this%TMat%RowMap(1:(size(this%TMat%RowMap)-1)), this%TMat%RowMap(2:size(this%TMat%RowMap)), Rred, 0.0d0, RfullAux) 
+        
+        if (it==1) then
+            Rfull = (this%UTay1-this%UTay0) + RfullAux  !Sums with Taylor step
+        else
+            Rfull = RfullAux
+        endif
+        
+        deallocate(RfullAux)
+        
     end subroutine    
     
 !--------------------------------------------------------------------------------------------------

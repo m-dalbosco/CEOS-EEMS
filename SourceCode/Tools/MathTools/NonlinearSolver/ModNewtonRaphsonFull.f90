@@ -116,8 +116,10 @@ contains
             end select
 
             if (this%ShowInfo) write(*,'(12x,a,i3,a,e16.9)') 'IT: ',IT ,'  NORM: ',normR
-
-            if (normR<this%tol) then
+            
+            if ((it==1) .AND. (SOE%isPeriodic)) this%tol=normR/1000
+            
+            if ((it>0) .AND. (normR<this%tol)) then
                 call this%Status%SetSuccess()
                 if (this%ShowInfo) write(*,'(12x,a,i3,a)')'Converged in ',IT,' iterations'
                 return
@@ -161,7 +163,7 @@ contains
             ! Update Unknown Variable and Additional Variables
             !---------------------------------------------------------------------------------------------------------------
             if (SOE%isPeriodic) then
-                call SOE%ExpandResult(DX,DXFull)
+                call SOE%ExpandResult(DX,DXFull,it)
                 X = X + eta*DXFull
             else
                 X = X + eta*DX

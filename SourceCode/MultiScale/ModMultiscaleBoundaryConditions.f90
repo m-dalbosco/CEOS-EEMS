@@ -225,11 +225,14 @@ module ModMultiscaleBoundaryConditions
         ! -----------------------------------------------------------------------------------
         integer                                :: i,j,k, nActive
         real(8), allocatable, dimension(:) :: ActiveInitialValue, ActiveFinalValue
-        real(8) :: FMacroInitial(3,3), FMacroFinal(3,3), Y(3), UmicroYInitial(3),UmicroYFinal(3)
+        real(8) :: FMacroInitial(3,3), FMacroFinal(3,3), DeltaFMacro(3,3), Y(3), UmicroYInitial(3), DeltaUmicroY(3), Alpha_min, Alpha
 
         !************************************************************************************
 
         !************************************************************************************
+        Alpha_min = Fext(1)
+        Alpha = DeltaFext(1)
+        
         Fext = 0.0d0
         DeltaFext = 0.0d0
 
@@ -241,18 +244,20 @@ module ModMultiscaleBoundaryConditions
 
         Allocate( NodalDispDOF(nActive) , ActiveInitialValue(nActive) , ActiveFinalValue(nActive) )
 
-
-
         !CRIAÇÃO DO VETOR E MONTAGEM DAS CONDIÇÕES DOS GRAUS DE LIBERDADE UTILIZADOS
         do k=1,size(this%NodalMultiscaleDispBC)
 
             ! Montando FMacro no tempo t baseado na curva informada pelo usuário
             do i = 1,3
                 do j = 1,3
-                FMacroInitial(i,j) = this%NodalMultiscaleDispBC(k)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%InitVal
-                FMacroFinal(i,j)   = this%NodalMultiscaleDispBC(k)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%FinalVal
+                DeltaFMacro(i,j)   = (Alpha-Alpha_min)*(this%NodalMultiscaleDispBC(k)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%FinalVal - this%NodalMultiscaleDispBC(k)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%InitVal)
+                FMacroInitial(i,j) = this%NodalMultiscaleDispBC(k)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%InitVal + Alpha_min*(this%NodalMultiscaleDispBC(k)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%FinalVal - this%NodalMultiscaleDispBC(k)%Fmacro(i,j)%LoadCase(LC)%Step(ST)%InitVal)
                 enddo
             enddo
+            
+            FMacroFinal = FMacroInitial + DeltaFMacro
+            
+            FMacroFinal(3,3) = 1/(FMacroFinal(1,1)*FMacroFinal(2,2))
 
             ! Obter a coordenada do nó onde será aplicada a condição de contorno prescrita
             Y = 0.0d0
@@ -260,21 +265,21 @@ module ModMultiscaleBoundaryConditions
 
             ! Calcular os deslocamento microscópico na coordenada Y
             UmicroYInitial = matmul((FMacroInitial - IdentityMatrix(3)),Y)
-            UmicroYFinal = matmul((FMacroFinal - IdentityMatrix(3)),Y)
+            DeltaUmicroY = matmul(DeltaFMacro,Y)
 
             ! Montando os deslocamentos micro prescritos nos graus de liberdade (analise mecânica)
             do i = 1,AnalysisSettings%NDOFnode
                 j = AnalysisSettings%NDOFnode*(k -1 ) + i
                 NodalDispDOF(j) = AnalysisSettings%NDOFnode*(this%NodalMultiscaleDispBC(k)%Node%ID -1 ) + i
                 ActiveInitialValue(j) = UmicroYInitial(i)
-                ActiveFinalValue(j)   = UmicroYFinal(i)
+                ActiveFinalValue(j) = UmicroYInitial(i) + DeltaUmicroY(i)
             enddo
         enddo
 
 
         DeltaUPresc=0.0d0
         do i = 1, size(NodalDispDOF)
-            !U( NodalDispDOF(i) ) = ActiveInitialValue(i)
+            U( NodalDispDOF(i) ) = ActiveInitialValue(i)
             DeltaUPresc( NodalDispDOF(i) ) =  ActiveFinalValue(i) - ActiveInitialValue(i)
         enddo
 

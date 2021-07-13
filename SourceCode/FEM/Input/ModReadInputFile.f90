@@ -547,22 +547,29 @@ contains
                         enddo
                     enddo
                   
+                    ! Taylor -------------------------
+                    allocate(BC%NodalMultiscaleDispBC(size(GlobalNodesList)))
+                    do i=1,size(GlobalNodesList)
+                        BC%NodalMultiscaleDispBC(i)%Fmacro => BC%MacroscopicDefGrad
+                        BC%NodalMultiscaleDispBC(i)%Node => GlobalNodesList(i)
+                    enddo
+                                        
                     ! Linear -------------------------
-                    cont = 0
-                    do i=1,size(BC%BoundaryNodes)
-                        cont = cont + size(BC%BoundaryNodes(i)%Nodes)
-                    enddo
-                    
-                    allocate(BC%NodalMultiscaleDispBC(cont))
-                     
-                    cont = 0
-                    do i=1,size(BC%BoundaryNodes)
-                        do j=1,size(BC%BoundaryNodes(i)%Nodes)
-                            cont = cont + 1
-                            BC%NodalMultiscaleDispBC(cont)%Fmacro => BC%MacroscopicDefGrad
-                            BC%NodalMultiscaleDispBC(cont)%Node => GlobalNodesList(BC%BoundaryNodes(i)%Nodes(j))
-                        enddo
-                    enddo
+                    !cont = 0
+                    !do i=1,size(BC%BoundaryNodes)
+                    !    cont = cont + size(BC%BoundaryNodes(i)%Nodes)
+                    !enddo
+                    !
+                    !allocate(BC%NodalMultiscaleDispBC(cont))
+                    !
+                    !cont = 0
+                    !do i=1,size(BC%BoundaryNodes)
+                    !    do j=1,size(BC%BoundaryNodes(i)%Nodes)
+                    !        cont = cont + 1
+                    !        BC%NodalMultiscaleDispBC(cont)%Fmacro => BC%MacroscopicDefGrad
+                    !        BC%NodalMultiscaleDispBC(cont)%Node => GlobalNodesList(BC%BoundaryNodes(i)%Nodes(j))
+                    !    enddo
+                    !enddo
                     
                 type is ( ClassMultiscaleBoundaryConditionsMinimal )
 
@@ -918,7 +925,11 @@ contains
                     select case (ElemType)
                         case (185) ! Ansys Element 185 - Hexa8
                             ndime = 3
-                            ElemType = ElementTypes%Hexa8
+                            if (MaterialList(1)%ModelEnumerator==14) then
+                                ElemType = ElementTypes%Hexa8R !with fiber reinforcement
+                            else
+                                ElemType = ElementTypes%Hexa8 !without fiber reinforcement
+                            endif
                         case (42) ! Ansys Element 42 - Quad4
                             ndime = 2
                             ElemType = ElementTypes%Quad4
@@ -928,13 +939,12 @@ contains
                             ElemType = ElementTypes%Tri3
                         case (92) ! Ansys Element 92 - Tetra10
                             ndime = 3
-                            ElemType = ElementTypes%Tetra10
-                       case (264) ! Ansys Element 264 - Hexa8R
-                            ndime = 3
-                            ElemType = ElementTypes%Hexa8R
-                       case (265) ! Element 265 - Tetra10R
-                            ndime = 3
-                            ElemType = ElementTypes%Tetra10R
+                            if (MaterialList(1)%ModelEnumerator==14) then
+                                ElemType = ElementTypes%Tetra10R !with fiber reinforcement
+                            else
+                                ElemType = ElementTypes%Tetra10  !without fiber reinforcement
+                            endif
+                            
                         case default
                             write(*,*)trim(Line)
                             stop 'Error: Ansys Element Type Not Identified'

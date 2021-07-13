@@ -1411,10 +1411,10 @@ module FEMAnalysis
 
             ! Internal variables
             ! -----------------------------------------------------------------------------------
-            real(8), allocatable, dimension(:) :: U , R , DeltaFext, DeltaUPresc, Fext_alpha0, Ubar_alpha0, Uconverged
+            real(8), allocatable, dimension(:) :: U , R , DeltaUTay , UTay_alpha0, Uconverged, Fext , DeltaFext
             real(8) :: DeltaTime , Time_alpha0
             real(8) :: alpha, alpha_max, alpha_min, alpha_aux
-            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e,gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep
+            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e, gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep
             real(8), parameter :: GR= (1.0d0 + dsqrt(5.0d0))/2.0d0
 
             integer, allocatable, dimension(:) :: KgValZERO, KgValONE
@@ -1443,12 +1443,11 @@ module FEMAnalysis
 
             FEMSoE % isPeriodic = .TRUE.
             
-            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % Ubar(nDOF) , FEMSoE % UConverged(nDOF) )
-
+            allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % UTay0(nDOF) , FEMSoE % UTay1(nDOF) )
+            allocate(Fext(1),DeltaFext(1)) !used to carry alpha into the GetBoundaryConditions routine
 
             ! Allocating arrays
-            allocate( R(nDOF), DeltaFext(nDOF),   Fext_alpha0(nDOF) )
-            allocate( U(nDOF), DeltaUPresc(nDOF), Ubar_alpha0(nDOF), Uconverged(nDOF)  )
+            allocate( R(nDOF), U(nDOF), DeltaUTay(nDOF), UTay_alpha0(nDOF), Uconverged(nDOF)  )
 
             allocate(FEMSoE%TMat)
             write(*,*) 'Building periodicity matrix...'
@@ -1459,7 +1458,7 @@ module FEMAnalysis
             write(*,*)            
 
             U = 0.0d0
-            Ubar_alpha0 = 0.0d0
+            UTay_alpha0 = 0.0d0
 
             nLoadCases = BC%GetNumberOfLoadCases()
 
@@ -1483,8 +1482,6 @@ module FEMAnalysis
                     write(*,'(4x,a,i3,a,i3,a)')'Step: ',ST,' (LC: ',LC,')'
                     write(*,*)''
 
-                    call BC%GetBoundaryConditions(AnalysisSettings, LC, ST, Fext_alpha0, DeltaFext,FEMSoE%DispDOF, U, DeltaUPresc)
-
                     ! Mapeando os graus de liberdade da matrix esparsa para a aplicação
                     ! da CC de deslocamento prescrito
                     !-----------------------------------------------------------------------------------
@@ -1507,10 +1504,7 @@ module FEMAnalysis
                     
                     call BC%GetTimeInformation(LC,ST,Time_alpha0,DeltaTime)
 
-                    ! Prescribed Incremental Displacement
-                    Ubar_alpha0 = U
                     Uconverged = U
-                    FEMSoE % UConverged = UConverged
 
                     alpha_max = 1.0d0 ; alpha_min = 0.0d0
                     alpha = alpha_max
@@ -1519,17 +1513,16 @@ module FEMAnalysis
 
                     SUBSTEPS: do while(.true.)
 
-
-                        write(*,'(8x,a,i3)') 'Cut Back: ',CutBack
-                        write(*,'(12x,a,i3,a,f7.4,a)') 'SubStep: ',SubStep,' (Alpha: ',alpha,')'
-
-
+                        Fext(1) = alpha_min
+                        DeltaFext(1) = alpha
+                        call BC%GetBoundaryConditions(AnalysisSettings, LC, ST, Fext, DeltaFext, FEMSoE%DispDOF, UTay_alpha0, DeltaUTay)
+                        
+                        FEMSoE % UTay0 = UTay_alpha0
+                        
                         FEMSoE % Time = Time_alpha0 + alpha*DeltaTime
-                        FEMSoE % Fext = Fext_alpha0 + alpha*DeltaFext
-                        FEMSoE % Ubar = Ubar_alpha0 + alpha*DeltaUPresc
+                        FEMSoE % UTay1 = FEMSoE%UTay0 + DeltaUTay
 
-
-                        call NLSolver%Solve( FEMSoE , FEMSoE%Ubar , U )
+                        call NLSolver%Solve( FEMSoE , XGuess = Uconverged , X = U )
 
                         IF (NLSolver%Status%Error) then
 
@@ -1552,7 +1545,7 @@ module FEMAnalysis
                                 write(*,'(a,i3,a,i3,a,i3,a)') 'Load Case: ',LC,' Step: ', ST , ' did not converge with ', AnalysisSettings%MaxCutBack, ' cut backs.'
                                 stop
                             endif
-
+                            
                             write(*,'(8x,a,i3)') 'Cut Back: ',CutBack
                             write(*,'(12x,a,i3,a,f7.4,a)') 'SubStep: ',SubStep,' (Alpha: ',alpha,')'
 
@@ -1571,8 +1564,6 @@ module FEMAnalysis
                         ELSE
 
                             Uconverged = U
-                            Ubar_alpha0 = UConverged - alpha*DeltaUPresc
-                            FEMSoE % UConverged = UConverged
                             
                             SubStep = SubStep + 1
 
