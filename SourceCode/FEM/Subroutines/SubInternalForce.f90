@@ -35,9 +35,10 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
 
     ! Internal variables
     ! -----------------------------------------------------------------------------------
-    integer :: e , nDOFel
+    integer :: e , nDOFel, i, j, nNodes
     integer , pointer , dimension(:) :: GM
     real(8) , pointer , dimension(:) :: Fe
+    logical :: ElementError_exists
 
     !************************************************************************************
 
@@ -59,7 +60,30 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
         call ElementList(e)%El%ElementInternalForce(AnalysisSettings, Fe, Status)
 
         if (Status%Error) then
+
+            inquire(file='ErrorElement.txt',exist=ElementError_exists) !Check if file with failed elements already exists
+            
+            if (ElementError_exists) then
+                open(37,file='ErrorElement.txt',status='old',access='append')
+            else
+                open(37,file='ErrorElement.txt',status='new')
+            endif
+                        
+            write(37,'(a)') Trim(Status%ErrorDescription)
+            write(37,'(a,i6)') 'Failed in element ',e
+            write(37,'(a)') 'Nodal coordinates (X Y Z):'
+            
+            nNodes = ElementList(e)%El%GetNumberOfNodes()
+            
+            do i=1,nNodes
+                write(37,'(3(1X,f12.6))') (ElementList(e)%El%ElementNodes(i)%Node%Coord(j), j=1,3)
+            enddo
+            
+            write (37,*) ''   
+            
+            close(37)
             return
+            
         endif
 
         Fint(GM) = Fint(GM) + Fe

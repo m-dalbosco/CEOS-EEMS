@@ -280,9 +280,6 @@ module ModExportResultFile
         real(8) , allocatable, target, dimension(:) :: U
         character(len=255) :: OptionName, OptionValue, String, FileName
         integer :: Flag_EndStep, NumberOfIterations,IterationFile
-        
-        type(ClassElementProfile)           :: ElProfile
-
 
         !************************************************************************************
 
@@ -317,11 +314,8 @@ module ModExportResultFile
         ! Restart Constitutive Model
         ! -----------------------------------------------------------------------------------
         do el = 1,size(FEA%ElementList)
-            
-            !Call profile to check if element has reinforcement capabilities
-            call FEA%ElementList(el)%El%GetProfile(ElProfile)
-            
-            if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
+                            
+            if (.not.FEA%AnalysisSettings%EmbeddedElements) then !no fiber reinforcement
             
                 do gp = 1,size(FEA%ElementList(el)%El%GaussPoints)
                     call FEA%ElementList(el)%El%GaussPoints(gp)%ConstitutiveModelDestructor()
@@ -415,11 +409,8 @@ module ModExportResultFile
             ! SAVING THE CONVERGED STATE
             ! ----------------------------------------------------------------------------------
             do el=1,size(FEA%ElementList)
-                
-                !Call profile to check if element has reinforcement capabilities
-                call FEA%ElementList(el)%El%GetProfile(ElProfile)
-            
-                if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
+                           
+            if (.not.FEA%AnalysisSettings%EmbeddedElements) then !no fiber reinforcement
                 
                     do gp=1,size(FEA%ElementList(el)%el%GaussPoints)
                         call FEA%ElementList(el)%el%GaussPoints(gp)%SwitchConvergedState()

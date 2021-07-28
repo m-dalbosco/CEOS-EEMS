@@ -1450,6 +1450,7 @@ module FEMAnalysis
             allocate( R(nDOF), U(nDOF), DeltaUTay(nDOF), UTay_alpha0(nDOF), Uconverged(nDOF)  )
 
             allocate(FEMSoE%TMat)
+            write(*,*) ''
             write(*,*) 'Building periodicity matrix...'
             call FEMSoE%BuildT
             FEMSoE%TMatDescr(1) = 'G'
@@ -2608,13 +2609,11 @@ module FEMAnalysis
             integer :: ElemRef, NodeRef, e, gp, n, NumberOfNodes, i, j, nGP, El_ID
             
             real(8),dimension(11) :: FiberData
-            logical               :: file_exists
             character(len=36)    :: line
 
 
             real(8) , pointer , dimension(:,:) :: NaturalCoord
             real(8) , pointer , dimension(:)   :: Weight
-            type(ClassElementProfile)          :: ElProfile
 
  		    !************************************************************************************
             ! ADDITIONAL COMPUTATIONS ON GAUSS POINTS
@@ -2625,100 +2624,86 @@ module FEMAnalysis
             ! Cálculo das direções dos reforços de fibra
             !####################################################################################
 
-            call this%ElementList(1)%El%GetProfile(ElProfile)
-            
-                if (ElProfile%AcceptFiberReinforcement == .true.) then
-                        
-                        inquire(file='Fiber_info.dat',exist=file_exists)
+            if (this%AnalysisSettings%EmbeddedElements) then
                 
-                        if (.not.file_exists) then
-                
-                            write(*,*) 'File Fiber_info.dat not found'
-                            STOP
-                
-                        else
-                            
-                            do e = 1 , size(this%ElementList)
-                            
-                                call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
-                
-                                do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
-                
-                                    mX(1) = 0.0d0
-                                    mX(2) = 0.0d0
-                                    mX(3) = 0.0d0
-                                    A0 = 0.0d0
-                                    L0 = 0.0d0
-                                    I4r = 0.0d0
-                                    Ef = 0.0d0
-                
-                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
-                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
-                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
-                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%I4r = I4r
-                                    this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%I4r = Ef
-                    
-                                enddo
-                            
-                            enddo
-                        
-                            write(*,*) ''
-                            write(*,*) 'Reading fiber info...'
-
-                        
-                            open(87,file='Fiber_info.dat',status='old')
-                        
-                            read(87,'(a)') line
-                            
-                            if (line=='Fiber integration points per element') then
-                                do i=1,size(this%ElementList)+1
-                                    read(87,*)
-                                enddo
-                            endif
-                                                        
-                            read(87,*)
-                            read(87,*)
-                        
-                            do while (.not. EOF(87))
-                        
-                                read(87,*) El_ID
-                
-                                do gp = 1,size(this%ElementList(El_ID)%El%ExtraGaussPoints) !fibers Gauss points
-
-                                    read(87,*) FiberData(:)
-                                            
-                                    IP(1) = FiberData(1)
-                                    IP(2) = FiberData(2)
-                                    IP(3) = FiberData(3)
-                                    w = FiberData(4)
-                                    mX(1) = FiberData(5)
-                                    mX(2) = FiberData(6)
-                                    mX(3) = FiberData(7)
-                                    L0 = FiberData(8)
-                                    A0 = FiberData(9)
-                                    I4r = FiberData(10)
-                                    Ef = FiberData(11)
-                                            
-                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord = IP
-                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight = w
-                
-                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
-                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
-                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
-                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%I4r = I4r
-                                    this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%Ef = Ef
-
-                                enddo
-
-                            enddo
+                do e = 1 , size(this%ElementList)
                                 
-                            close(87)
-                            write(*,*) 'Done!'
-                            write(*,*) ''
-                            
-                        endif
-                                            
-                    endif   
+                    call this%ElementList(e)%El%GetGaussPoints(NaturalCoord,Weight)
+                
+                    do gp = 1,size(NaturalCoord,dim=1) !matrix Gauss points - mX=0
+                
+                        mX(1) = 0.0d0
+                        mX(2) = 0.0d0
+                        mX(3) = 0.0d0
+                        A0 = 0.0d0
+                        L0 = 0.0d0
+                        I4r = 0.0d0
+                        Ef = 0.0d0
+                                   
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%mX = mX
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%A0 = A0
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%L0 = L0
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%I4r = I4r
+                        this%ElementList(e)%El%GaussPoints(gp)%AdditionalVariables%I4r = Ef
+       
+                    enddo
+         
+                enddo
+         
+                write(*,*) ''
+                write(*,*) 'Reading fiber info...'
+
+                open(87,file='Fiber_info.dat',status='old')
+                     
+                read(87,'(a)') line
+                
+                if (line=='Fiber integration points per element') then
+                    
+                    do i=1,size(this%ElementList)+1
+                        read(87,*)
+                    enddo
+                endif
+                
+                read(87,*)
+                read(87,*)
+                
+                do while (.not. EOF(87))
+                    
+                    read(87,*) El_ID
+                    
+                    do gp = 1,size(this%ElementList(El_ID)%El%ExtraGaussPoints) !fibers Gauss points
+                        
+                        read(87,*) FiberData(:)
+                        
+                        IP(1) = FiberData(1)
+                        IP(2) = FiberData(2)
+                        IP(3) = FiberData(3)
+                        w = FiberData(4)
+                        mX(1) = FiberData(5)
+                        mX(2) = FiberData(6)
+                        mX(3) = FiberData(7)
+                        L0 = FiberData(8)
+                        A0 = FiberData(9)
+                        I4r = FiberData(10)
+                        Ef = FiberData(11)
+                        
+                        this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord = IP
+                        this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%Weight = w
+                        this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%mX = mX
+                        this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%A0 = A0
+                        this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%L0 = L0
+                        this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%I4r = I4r
+                        this%ElementList(El_ID)%El%ExtraGaussPoints(gp)%AdditionalVariables%Ef = Ef
+                    
+                    enddo
+                
+                enddo
+                
+                close(87)
+                write(*,*) 'Done!'
+                write(*,*) ''
+            
+            endif
     
             !####################################################################################
             ! Cálculo das tangentes da hélice

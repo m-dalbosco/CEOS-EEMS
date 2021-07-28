@@ -59,6 +59,7 @@
 		<File RelativePath="..\..\SourceCode\ConstitutiveLibrary\ConstitutiveModelsLibrary\ModJ2Plasticity.f90"/>
 		<File RelativePath="..\..\SourceCode\ConstitutiveLibrary\ConstitutiveModelsLibrary\ModNeoHookean.f90"/>
 		<File RelativePath="..\..\SourceCode\ConstitutiveLibrary\ConstitutiveModelsLibrary\ModNeoHookeanFiberRecruit.f90"/>
+		<File RelativePath="..\..\SourceCode\ConstitutiveLibrary\ConstitutiveModelsLibrary\ModNeoHookeanFiberReinf.f90"/>
 		<File RelativePath="..\..\SourceCode\ConstitutiveLibrary\ConstitutiveModelsLibrary\ModNeoHookeanIsochoric.f90"/>
 		<File RelativePath="..\..\SourceCode\ConstitutiveLibrary\ConstitutiveModelsLibrary\ModNeoHookeanQ1P0.f90"/>
 		<File RelativePath="..\..\SourceCode\ConstitutiveLibrary\ConstitutiveModelsLibrary\ModStVenantKirchhoff.f90"/>
@@ -74,11 +75,9 @@
 		<Filter Name="Elements">
 		<Filter Name="ElementLibrary">
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementHexa8.f90"/>
-		<File RelativePath="..\..\SourceCode\FEM\Elements\ElementLibrary\ModElementHexa8R.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementLibrary.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementQuad4.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\Elements\ElementLibrary\ModElementTetra10.f90"/>
-		<File RelativePath="..\..\SourceCode\FEM\Elements\ElementLibrary\ModElementTetra10R.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementTetra4.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementTri3.f90"/></Filter>
 		<Filter Name="ElementMethod">

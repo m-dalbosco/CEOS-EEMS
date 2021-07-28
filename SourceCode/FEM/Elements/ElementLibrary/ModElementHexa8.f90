@@ -61,8 +61,7 @@ module ElementHexa8
             GeometryType = GeometryTypes %  Hexahedra      , &
             FullIntegrationCapable = .true.                , &
             MeanDilatationCapable=.true. , &
-            FiberReinforcementCapable=.false. , &
-                ElementDimension = 3 )
+            ElementDimension = 3 )
 
         end subroutine
 

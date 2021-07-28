@@ -37,12 +37,12 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
     ! -----------------------------------------------------------------------------------
     real(8) :: F(3,3)
     real(8) :: Volume, VolumeX, T
-    integer :: e , gp , nDOFel
+    integer :: e , gp , nDOFel, i, j, nNodes
     integer , pointer , dimension(:)   :: GM
     real(8) , pointer , dimension(:,:) :: NaturalCoord
     real(8) , pointer , dimension(:)   :: Weight
-    type(ClassElementProfile)          :: ElProfile
     real(8)                            :: ExtraNaturalCoord(3)
+    logical                            :: ElementError_exists
 
     !************************************************************************************
 
@@ -63,7 +63,32 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
 
         call ElementList(e)%El%ElementVolume(AnalysisSettings,Volume,VolumeX, Status)
 
-        if (Status%Error) return
+        if (Status%Error) then
+
+            inquire(file='ErrorElement.txt',exist=ElementError_exists) !Check if file with failed elements already exists
+            
+            if (ElementError_exists) then
+                open(37,file='ErrorElement.txt',status='old',access='append')
+            else
+                open(37,file='ErrorElement.txt',status='new')
+            endif
+                        
+            write(37,'(a)') Trim(Status%ErrorDescription)
+            write(37,'(a,i6,a,f7.4)') 'Failed in element ',e,' at time ',Time
+            write(37,'(a)') 'Nodal coordinates (X Y Z):'
+            
+            nNodes = ElementList(e)%El%GetNumberOfNodes()
+            
+            do i=1,nNodes
+                write(37,'(3(1X,f12.6))') (ElementList(e)%El%ElementNodes(i)%Node%Coord(j), j=1,3)
+            enddo
+            
+            write (37,*) ''   
+            
+            close(37)
+            return
+            
+        endif
 
         ! Armazendo o volume de cada elemento
         ElementList(e)%El%Volume  = Volume
@@ -91,11 +116,8 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
     !************************************************************************************
     ! SOLVING THE GLOBAL CONSTITUTIVE MODEL - EXTRA GAUSS POINTS
     !************************************************************************************
-        
-        !Call profile to check if element has reinforcement capabilities
-        call ElementList(e)%El%GetProfile(ElProfile)
-    
-        if (ElProfile%AcceptFiberReinforcement == .true.) then
+                            
+        if (AnalysisSettings%EmbeddedElements) then
         
             do gp = 1 , size(ElementList(e)%El%ExtraGaussPoints)
                 

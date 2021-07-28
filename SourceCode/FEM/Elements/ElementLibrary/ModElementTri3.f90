@@ -61,7 +61,6 @@ module ElementTri3
             GeometryType = GeometryTypes % Triangle        , &
             FullIntegrationCapable = .true.                , &
             MeanDilatationCapable=.true.                   , &
-            FiberReinforcementCapable=.false. , &
             ElementDimension = 2 )
 
         end subroutine

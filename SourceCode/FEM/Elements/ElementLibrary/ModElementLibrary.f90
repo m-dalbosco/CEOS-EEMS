@@ -23,8 +23,6 @@ module ElementLibrary
     use ElementTetra4
     use ElementHexa8
     use ElementTetra10
-    use ElementHexa8R
-    use ElementTetra10R
 
     ! Elements ID used in the code: [Geometry][InterpolationDegree][ElementTechnology]
     !
@@ -37,7 +35,6 @@ module ElementLibrary
         integer :: Quad4  = 210	, Quad9   = 220
         integer :: Tetra4 = 310 , Tetra10 = 320
         integer :: Hexa8  = 410 , Hexa27  = 420
-        integer :: Hexa8R = 411, Tetra10R = 321
     end type
 
     type(ClassElementTypes),parameter :: ElementTypes = ClassElementTypes()
@@ -78,10 +75,7 @@ module ElementLibrary
             type(ClassElementTetra4)  , pointer :: ElTetra4   => null()
             type(ClassElementHexa8)   , pointer :: ElHexa8    => null()
             type(ClassElementTetra10) , pointer :: ElTetra10  => null()
-            type(ClassElementHexa8R)   , pointer :: ElHexa8R    => null()
-            type(ClassElementTetra10R)   , pointer :: ElTetra10R    => null()
-
-		    !************************************************************************************
+     	    !************************************************************************************
 
 		    !************************************************************************************
             ! SELECTION AND ALLOCATION OF THE ELEMENT TYPE
@@ -113,16 +107,6 @@ module ElementLibrary
 
                     allocate(ElTetra10)
                     Element => ElTetra10
-                    
-                case (ElementTypes % Hexa8R)
-
-                    allocate(ElHexa8R)
-                    Element=>ElHexa8R
-                    
-                 case (ElementTypes % Tetra10R)
-
-                    allocate(ElTetra10R)
-                    Element=>ElTetra10R
 
             case default
                 call Error("AllocateNewElement :: Element not identified")
@@ -271,8 +255,6 @@ LOOP:      do el = 1 , size(AvailableElements)
         type(ClassElementTetra4)  :: ElTetra4
         type(ClassElementHexa8)   :: ElHexa8
         type(ClassElementTetra10) :: ElTetra10
-        type(ClassElementHexa8R)  :: ElHexa8R
-        type(ClassElementTetra10R) :: ElTetra10R
 
         NumberOfAvailableElements = 7
 
@@ -284,8 +266,6 @@ LOOP:      do el = 1 , size(AvailableElements)
         call ElTetra4%GetProfile(AvailableElements(3)) ; AvailableElements(3)%ElementType = ElementTypes % Tetra4
         call ElHexa8 %GetProfile(AvailableElements(4)) ; AvailableElements(4)%ElementType = ElementTypes % Hexa8
         call ElTetra10%GetProfile(AvailableElements(5)) ; AvailableElements(5)%ElementType = ElementTypes % Tetra10
-        call ElHexa8R %GetProfile(AvailableElements(6)) ; AvailableElements(6)%ElementType = ElementTypes % Hexa8R
-        call ElTetra10R%GetProfile(AvailableElements(7)) ; AvailableElements(7)%ElementType = ElementTypes % Tetra10R
 
     end subroutine
 

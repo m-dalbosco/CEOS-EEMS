@@ -32,6 +32,7 @@ module ConstitutiveModelLibrary
     use ModViscoelasticMatrix
     use ModViscoelasticMatrixFiber
     use NeoHookeanFiberRecruit
+    use NeoHookeanFiberReinf
 
     ! Constitutive Models ID registered:
     type ClassConstitutiveModels
@@ -49,6 +50,7 @@ module ConstitutiveModelLibrary
         integer   :: ViscoelasticMatrixModel        = 12
         integer   :: ViscoelasticMatrixFiberModel   = 13
         integer   :: NeoHookeanFiberRecruitModel    = 14
+        integer   :: NeoHookeanFiberReinfModel      = 15
     end type
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -118,6 +120,9 @@ module ConstitutiveModelLibrary
             type(ClassViscoelasticMatrixFiber_3D)      , pointer , dimension(:) :: ViscoMatrixFiber_3D
             
             type(ClassNeoHookeanFiberRecruit_3D)       , pointer , dimension(:) :: NHFREC_3D
+            
+            type(ClassNeoHookeanFiberReinf_3D)         , pointer , dimension(:) :: NHFR_3D
+
 
 		    !************************************************************************************
 
@@ -391,6 +396,22 @@ module ConstitutiveModelLibrary
 
                     endif
                 ! -------------------------------------------------------------------------------
+                    
+                ! -------------------------------------------------------------------------------
+                ! Neo-Hookean Fiber Reinforced Model
+                ! -------------------------------------------------------------------------------
+                case (ConstitutiveModels % NeoHookeanFiberReinfModel)
+
+                    if ( AnalysisSettings%Hypothesis == HypothesisOfAnalysis%ThreeDimensional ) then
+
+                            allocate( NHFR_3D(nGP) )
+                            GaussPoints => NHFR_3D
+
+                    else
+                            call Error("Error: Neo Hookean Fiber Reinforced Model - analysis type not available.")
+
+                    endif
+
 
                 case default
 
@@ -505,6 +526,10 @@ module ConstitutiveModelLibrary
 
                 modelID = ConstitutiveModels%NeoHookeanFiberRecruitModel
 
+            elseif ( Comp%CompareStrings('neo_hookean_fiber_reinf', model) .and. (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) ) then
+
+                modelID = ConstitutiveModels%NeoHookeanFiberReinfModel
+            
             else
 
                 call Error( "Error: Material Model not identified: "//trim(model))

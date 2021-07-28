@@ -171,9 +171,9 @@ module ModMultiscaleAnalysis
         real(8) , dimension(:,:) , pointer :: DifSF
         real(8) , dimension(this%AnalysisSettings%AnalysisDimension,this%AnalysisSettings%AnalysisDimension) :: JacobX
         real(8) , dimension(:)   , pointer :: ShapeFunctions
-        type(ClassElementProfile)           :: ElProfile
         real(8) , pointer , dimension(:)    :: CauchyFiber
         real(8)                             :: WeightFiber, A0f, L0f
+
         !************************************************************************************
 
         !************************************************************************************
@@ -192,11 +192,8 @@ module ModMultiscaleAnalysis
         HomogenizedStress = 0.0d0
         !Loop over Elements
         do e = 1,size(this%ElementList)
-            
-            !Call profile to check if element has reinforcement capabilities
-            call this%ElementList(e)%El%GetProfile(ElProfile)
-            
-            if (ElProfile%AcceptFiberReinforcement == .false.) then !no fiber reinforcement
+        
+            if (.not.this%AnalysisSettings%EmbeddedElements) then !no fiber reinforcement
 
                 nNodes = this%ElementList(e)%El%GetNumberOfNodes()
 

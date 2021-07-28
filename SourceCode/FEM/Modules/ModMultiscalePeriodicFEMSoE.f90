@@ -31,6 +31,8 @@ module ModMultiscalePeriodicFEMSoE
         type  (ClassGlobalSparseMatrix), pointer             :: KgRed
         type  (ClassGlobalSparseMatrix), pointer             :: TMat
         character(len=1),dimension(6)                        :: TMatDescr
+        
+        logical :: PrintMats = .FALSE. !Set to .TRUE. to print TMat, Kg, KgAux, KgRedFull, KgRed
 
 
     contains
@@ -102,8 +104,6 @@ module ModMultiscalePeriodicFEMSoE
         allocate(RFull(nDOF))
         
         call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
-        !Print for checking
-        !call OutputSparseMatrix(this%Kg,'Kg.txt',nDOF,nDOF)        
 
         this%BC%it = this%it
         ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R!!!
@@ -111,6 +111,8 @@ module ModMultiscalePeriodicFEMSoE
         RFull = -RFull
         call this%BC%ApplyBoundaryConditionsNEW(  this%Kg , RFull , this%DispDOF, this%UTay1 , this%UTay0, this%PrescDispSparseMapZERO, this%PrescDispSparseMapONE, this%FixedSupportSparseMapZERO, this%FixedSupportSparseMapONE )
         RFull = -RFull
+        !Print for checking at first iteration
+        if ((this%it==0) .AND. (this%PrintMats)) call OutputSparseMatrix(this%Kg,'Kg.txt',nDOF,nDOF)
                 
         allocate(KgAux%RowMap(nDOFRed+1))
                
@@ -124,8 +126,8 @@ module ModMultiscalePeriodicFEMSoE
         KgAux%Col = 0
         !Calculate KgAux = Tmat'*Kg
         call mkl_dcsrmultcsr('T', 2, 0, nDOF, nDOFRed, nDOF, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, this%Kg%Val, this%Kg%Col, this%Kg%RowMap, KgAux%Val, KgAux%Col, KgAux%RowMap, nzmax, info)
-        !Print for checking
-        !call OutputSparseMatrix(KgAux,'KgAux.txt',nDOFRed,nDOF)
+        !Print for checking at first iteration
+        if ((this%it==0) .AND. (this%PrintMats)) call OutputSparseMatrix(KgAux,'KgAux.txt',nDOFRed,nDOF)
         
         allocate(KgRed%RowMap(nDOFRed+1))
         !Calculate length of KgRed = KgAux*TMat
@@ -137,8 +139,8 @@ module ModMultiscalePeriodicFEMSoE
         KgRed%Col = 0
         !Calculate KgRed = KgAux*TMat
         call mkl_dcsrmultcsr('N', 2, 0, nDOFRed, nDOF, nDOFRed, KgAux%Val, KgAux%Col, KgAux%RowMap, this%TMat%Val, this%TMat%Col, this%TMat%RowMap, KgRed%Val, KgRed%Col, KgRed%RowMap, nzmax, info)
-        !Print for checking
-        !call OutputSparseMatrix(KgRed,'KgRedFull.txt',nDOFRed,nDOFRed)
+        !Print for checking  at first iteration
+        if ((this%it==0) .AND. (this%PrintMats)) call OutputSparseMatrix(KgRed,'KgRedFull.txt',nDOFRed,nDOFRed)
         
         deallocate(KgAux%RowMap,KgAux%Val,KgAux%Col)
         
@@ -160,8 +162,8 @@ module ModMultiscalePeriodicFEMSoE
         deallocate(KgRed%RowMap,KgRed%Val,KgRed%Col)
 
         call ConvertToCoordinateFormatUpperTriangular( KgRedSparse , this%KgRed%Row , this%KgRed%Col , this%KgRed%Val , this%KgRed%RowMap)
-        !Print for checking
-        !call OutputSparseMatrix(this%KgRed,'KgRedFinal.txt',nDOFRed,nDOFRed)
+        !Print for checking  at first iteration
+        if ((this%it==0) .AND. (this%PrintMats)) call OutputSparseMatrix(this%KgRed,'KgRedFinal.txt',nDOFRed,nDOFRed)
         
         call SparseMatrixKill(KgRedSparse)
         
@@ -816,7 +818,8 @@ module ModMultiscalePeriodicFEMSoE
             enddo
         enddo
         
-        call sortqq(LOC(NulCols),size(NulCols),SRT$INTEGER4)
+        countNulCols = countNulCols-1
+        call sortqq(LOC(NulCols),countNulCols,SRT$INTEGER4) !sort NulCols array
 
         !Converting the sparse matrix to coordinate format (used by Pardiso Sparse Solver)
         call ConvertToCoordinateFormat( TMatSparse , this%TMat%Row , this%TMat%Col , this%TMat%Val , this%TMat%RowMap)
@@ -845,7 +848,7 @@ module ModMultiscalePeriodicFEMSoE
         enddo
 
         !Output matrix
-        !call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
+        if (this%PrintMats) call OutputSparseMatrix(this%TMat,'TMatRedSparse.txt',nDOF,nDOFRed)
         
         !Fix vertices
         allocate(this%verticesDOF(24))
@@ -890,26 +893,18 @@ module ModMultiscalePeriodicFEMSoE
     subroutine OutputRealMatrix(Mat,filename)
         real(8),allocatable,dimension(:,:) :: Mat        
         character(len=*)                   :: filename
-        character(len=30)                  :: Form
+        character(len=128)                 :: nColsString
         integer                            :: nLin, nCol, FileID, i, j
 
         nLin = size(Mat,1)
         nCol = size(Mat,2)
         
-        if (nCol == 24) then
-            Form = '24(1X,E16.9)'
-        elseif (nCol == 81) then
-            Form = '81(1X,E16.9)'
-        elseif (nCol == 192) then
-            Form = '192(1X,E16.9)'
-        elseif (nCol == 375) then
-            Form = '375(1X,E16.9)'
-        endif
+        nColsString = int2str(nCol)
                 
         FileID = 37
         open(FileID,file=filename,status='unknown')
         do i=1,nLin
-            write(FileID,'('//trim(Form)//')') (Mat(i,j), j=1,nCol)
+            write(FileID,'('//trim(nColsString)//'(1X,E16.9))') (Mat(i,j), j=1,nCol)
         enddo
         close(FileID)
         
@@ -943,5 +938,14 @@ module ModMultiscalePeriodicFEMSoE
         
     end subroutine
 
+    !---------------------------------------------------------------------------------------------------------------------
+    
+    character(len=128) function int2str(int)
+        integer int
+        write(int2str,*) int
+    endfunction
+    
+
 end module
+
 

@@ -812,6 +812,7 @@ contains
 
         integer :: NumberOfMaterials , i , MaterialID, ModelEnumerator
         character(len=100):: ModelName, string , OptionName , OptionValue
+        logical :: Fiber_info_exists
 
 
         call DataFile%GetNextOption(OptionName , OptionValue)
@@ -843,13 +844,29 @@ contains
             call DataFile%CheckError
 
             MaterialList(i)%MaterialID = MaterialID
-
+            
             call DataFile%GetNextString(ModelName)
             call DataFile%CheckError
 
             call ConstitutiveModelIdentifier( ModelName, AnalysisSettings, ModelEnumerator )
 
             MaterialList(i)%ModelEnumerator= ModelEnumerator
+            
+            if (ModelEnumerator==14 .OR. ModelEnumerator==15) then
+                inquire(file='Fiber_info.dat',exist=Fiber_info_exists) !Check if simulation with embedded elements                
+                if (Fiber_info_exists) then
+                    write(*,*) ''
+                    write(*,*) '** Simulation with embedded elements! **'
+                    AnalysisSettings%EmbeddedElements = .TRUE.
+                else
+                    write(*,*) ''
+                    write(*,*) '** ERROR: no Fiber_info.dat found! **'
+                    write(*,*) ''
+                    STOP
+                endif
+            else
+                AnalysisSettings%EmbeddedElements = .FALSE.
+            endif
 
             call AllocateConstitutiveModel( ModelEnumerator , AnalysisSettings , 1 , MaterialList(i)%Mat )
 
@@ -925,11 +942,7 @@ contains
                     select case (ElemType)
                         case (185) ! Ansys Element 185 - Hexa8
                             ndime = 3
-                            if (MaterialList(1)%ModelEnumerator==14) then
-                                ElemType = ElementTypes%Hexa8R !with fiber reinforcement
-                            else
-                                ElemType = ElementTypes%Hexa8 !without fiber reinforcement
-                            endif
+                            ElemType = ElementTypes%Hexa8
                         case (42) ! Ansys Element 42 - Quad4
                             ndime = 2
                             ElemType = ElementTypes%Quad4
@@ -939,11 +952,8 @@ contains
                             ElemType = ElementTypes%Tri3
                         case (92) ! Ansys Element 92 - Tetra10
                             ndime = 3
-                            if (MaterialList(1)%ModelEnumerator==14) then
-                                ElemType = ElementTypes%Tetra10R !with fiber reinforcement
-                            else
-                                ElemType = ElementTypes%Tetra10  !without fiber reinforcement
-                            endif
+                            ElemType = ElementTypes%Tetra10
+
                             
                         case default
                             write(*,*)trim(Line)
@@ -970,7 +980,7 @@ contains
 
                      !Leitura do Tetra10 - Arquivo .cdb com a conectividade em duas linhas
                      !Obs. Com esta implementação a malha deverá ser somente de Tetra10.
-                    if (ElemType == ElementTypes%Tetra10 .or. ElemType == ElementTypes%Tetra10R) then
+                    if (ElemType == ElementTypes%Tetra10) then
 
                         do while ( .not. Compare(AuxString(1),'-1') )
 
@@ -1013,7 +1023,7 @@ contains
                         ElementMaterialID(ElemID) = MaterialID
 
                         ! Leitura da conectividade
-                        if (ElemType == ElementTypes%Hexa8 .or. ElemType == ElementTypes%Hexa8R) then
+                        if (ElemType == ElementTypes%Hexa8) then
 
                             do i = 1,ENnodes
                                 ElemConec(i) = AuxString(11+i)

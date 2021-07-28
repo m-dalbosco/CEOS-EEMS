@@ -80,7 +80,6 @@ module Element
         logical :: IsQuadratic = .false.
         logical :: AcceptFullIntegration = .false.
         logical :: AcceptMeanDilatation = .false.
-        logical :: AcceptFiberReinforcement = .false.
 
         contains
 
@@ -172,10 +171,10 @@ module Element
          !==========================================================================================
 
 
-        subroutine LoadProfile(this , ElementType , NumberOfNodes , IsQuadratic , GeometryType , FullIntegrationCapable , MeanDilatationCapable , FiberReinforcementCapable , ElementDimension )
+        subroutine LoadProfile(this , ElementType , NumberOfNodes , IsQuadratic , GeometryType , FullIntegrationCapable , MeanDilatationCapable , ElementDimension )
             class(ClassElementProfile) :: this
             integer::ElementType,NumberOfNodes,GeometryType , ElementDimension
-            logical::IsQuadratic,FullIntegrationCapable,MeanDilatationCapable,FiberReinforcementCapable
+            logical::IsQuadratic,FullIntegrationCapable,MeanDilatationCapable
 
             this % ElementType = ElementType
             this % NumberOfNodes = NumberOfNodes
@@ -183,7 +182,6 @@ module Element
             this % GeometryType = GeometryType
             this % AcceptFullIntegration = FullIntegrationCapable
             this % AcceptMeanDilatation = MeanDilatationCapable
-            this % AcceptFiberReinforcement = FiberReinforcementCapable
             this % ElementDimension = ElementDimension
 
         end subroutine
@@ -230,7 +228,6 @@ module Element
             real(8) , pointer , dimension(:,:)  :: NaturalCoord
             real(8) , pointer , dimension(:,:)  :: B , G , S , D, DB, SG, Bdiv
             real(8)                             :: FactorAxi
-            type(ClassElementProfile)           :: ElProfile
             real(8)                             :: NaturalCoordFiber(3), WeightFiber, A0f, L0f, dV0f, dVf
 
 		    !************************************************************************************
@@ -312,11 +309,8 @@ module Element
 
                 !Mterial and Geometric Stiffness Matrix (Nonlinear Part)
                 !Loop over gauss points
-                
-                !Call profile to check if element has reinforcement capabilities
-                call this%GetProfile(ElProfile)
-            
-                if (ElProfile%AcceptFiberReinforcement == .false.) then
+                            
+                if (.not.AnalysisSettings%EmbeddedElements) then !no fiber reinforcement
             
                     ! Retrieving gauss points parameters for numerical integration - no fiber reinforcement
                     call this%GetGaussPoints(NaturalCoord,Weight)
@@ -516,10 +510,10 @@ module Element
             real(8) , pointer , dimension(:,:)  :: NaturalCoord
             real(8) , pointer , dimension(:,:)  :: B , G
             real(8)                             :: FactorAxi
-            type(ClassElementProfile)           :: ElProfile
             real(8) , pointer , dimension(:)    :: CauchyFiber
             real(8)                             :: NaturalCoordFiber(3), WeightFiber, A0f, L0f, dV0f, dVf
-		    !************************************************************************************
+
+            !************************************************************************************
 
 		    !************************************************************************************
             ! ELEMENT INTERNAL FORCE CALCULATION
@@ -541,11 +535,8 @@ module Element
             ! Allocating memory for the Cauchy Stress (Plain States, Axisymmetric or 3D)
             Cauchy => Stress_Memory( 1:AnalysisSettings%StressSize )
             CauchyFiber => Stress_Memory( 1:AnalysisSettings%StressSize )
-            
-            !Call profile to check if element has reinforcement capabilities
-            call this%GetProfile(ElProfile)
-            
-            if (ElProfile%AcceptFiberReinforcement == .false.) then
+                            
+            if (.not.AnalysisSettings%EmbeddedElements) then !no fiber reinforcement
             
                 ! Retrieving gauss points parameters for numerical integration - no fiber reinforcement
                 call this%GetGaussPoints(NaturalCoord,Weight)
