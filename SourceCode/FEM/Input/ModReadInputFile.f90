@@ -953,7 +953,9 @@ contains
                         case (92) ! Ansys Element 92 - Tetra10
                             ndime = 3
                             ElemType = ElementTypes%Tetra10
-
+                        case (186) ! Ansys Element 186 - Hexa20
+							 ndime = 3
+                             ElemType = ElementTypes%Hexa20
                             
                         case default
                             write(*,*)trim(Line)
@@ -1011,6 +1013,68 @@ contains
 
                         end do
 
+                        !Leitura do Tetra4 
+                        !Obs. Com esta implementação a malha deverá ser somente de Tetra4.
+                        elseif (ElemType == ElementTypes%Tetra4) then
+
+                            do while ( .not. Compare(AuxString(1),'-1') )
+
+                                if ( size(AuxString,1) .ne. 2 ) then
+
+                                    ElemID = AuxString(11)
+                                    ENnodes = AuxString(9)
+                                    ENnodes = ENnodes/2
+                                    MaterialID = AuxString(1)
+
+                                    ElementMaterialID(ElemID) = MaterialID
+
+                                    ElemConec(1) = AuxString(12)
+                                    ElemConec(2) = AuxString(13)
+                                    ElemConec(3) = AuxString(14)
+                                    ElemConec(4) = AuxString(16)
+
+                                    call ElementConstructor( ElementList(ElemID)%el , ElemConec(1:ENnodes) ,ElemType , GlobalNodesList, MaterialID)
+                                
+                                endif
+
+                                read(FileNumber,'(a255)') line
+                                call Split(Line,AuxString,' ')
+
+                            end do
+                            
+                    ! Leitura do elemento Hexa20 (2 linhas de leitura)    
+                    elseif (ElemType == ElementTypes%Hexa20) then    
+						 
+						    do while ( .not. Compare(AuxString(1),'-1') )
+
+							    if ( size(AuxString,1) .ne. 12 ) then
+
+								    ElemID = AuxString(11)
+								    ENnodes = AuxString(9)
+								    MaterialID = AuxString(1)
+
+								    ElementMaterialID(ElemID) = MaterialID
+
+								    do i = 1,ENnodes-12
+									    ElemConec(i) = AuxString(11+i)
+								    enddo
+
+							    elseif ( size(AuxString,1) .eq. 12 ) then
+								
+								    do i = 1, 12
+									    ElemConec(i+8) = AuxString(i)    
+								    enddo
+								
+								    call ElementConstructor( ElementList(ElemID)%el , ElemConec(1:ENnodes) ,ElemType , GlobalNodesList, MaterialID)
+								
+							    endif
+
+
+							    read(FileNumber,'(a255)') line
+							    call Split(Line,AuxString,' ')
+
+						    end do
+                    
                     else
 
                     ! Leitura dos demais elementos

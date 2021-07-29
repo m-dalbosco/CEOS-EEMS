@@ -23,18 +23,19 @@ module ElementLibrary
     use ElementTetra4
     use ElementHexa8
     use ElementTetra10
+    use ElementHexa20
 
     ! Elements ID used in the code: [Geometry][InterpolationDegree][ElementTechnology]
     !
     ! [Geometry]            -> [ 1=Triangle ; 2=Quadrilateral ; 3=Tetrahedra ; 4=Hexahedra ]
     ! [InterpolationDegree] -> [ 1=Linear ;	2=Quadratic ]
-    ! [ElementTechnology]   -> [ 0=Full Integration ; 1 = Fiber reinforced 2,3...n=Set by User ]
+    ! [ElementTechnology]   -> [ 0=Full Integration ; 2,3...n=Set by User ]
 	! ------------------------------------------------------------------------------------------
 	type ClassElementTypes
         integer :: Tri3   = 110	, Tri6	  = 120
         integer :: Quad4  = 210	, Quad9   = 220
         integer :: Tetra4 = 310 , Tetra10 = 320
-        integer :: Hexa8  = 410 , Hexa27  = 420
+        integer :: Hexa8  = 410 , Hexa20  = 420
     end type
 
     type(ClassElementTypes),parameter :: ElementTypes = ClassElementTypes()
@@ -75,6 +76,7 @@ module ElementLibrary
             type(ClassElementTetra4)  , pointer :: ElTetra4   => null()
             type(ClassElementHexa8)   , pointer :: ElHexa8    => null()
             type(ClassElementTetra10) , pointer :: ElTetra10  => null()
+            type(ClassElementHexa20)  , pointer :: ElHexa20   => null()
      	    !************************************************************************************
 
 		    !************************************************************************************
@@ -102,6 +104,11 @@ module ElementLibrary
 
                     allocate(ElHexa8)
                     Element=>ElHexa8
+                    
+                case (ElementTypes % Hexa20)
+                    
+                    allocate(ElHexa20)
+                    Element => ElHexa20
 
                 case (ElementTypes % Tetra10)
 
@@ -255,8 +262,9 @@ LOOP:      do el = 1 , size(AvailableElements)
         type(ClassElementTetra4)  :: ElTetra4
         type(ClassElementHexa8)   :: ElHexa8
         type(ClassElementTetra10) :: ElTetra10
+        type(ClassElementHexa20)  :: ElHexa20
 
-        NumberOfAvailableElements = 7
+        NumberOfAvailableElements = 6
 
         if (allocated(AvailableElements)) deallocate(AvailableElements)
         allocate( AvailableElements(NumberOfAvailableElements))
@@ -266,6 +274,7 @@ LOOP:      do el = 1 , size(AvailableElements)
         call ElTetra4%GetProfile(AvailableElements(3)) ; AvailableElements(3)%ElementType = ElementTypes % Tetra4
         call ElHexa8 %GetProfile(AvailableElements(4)) ; AvailableElements(4)%ElementType = ElementTypes % Hexa8
         call ElTetra10%GetProfile(AvailableElements(5)) ; AvailableElements(5)%ElementType = ElementTypes % Tetra10
+        call ElHexa20 %GetProfile(AvailableElements(6)) ; AvailableElements(6)%ElementType = ElementTypes % Hexa20
 
     end subroutine
 

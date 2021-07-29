@@ -73,6 +73,8 @@ module ModHyperView
             class(ClassConstitutiveModel) , pointer :: GaussPoint
 
             type (ClassParser)                      :: Comp
+            
+            type(ClassElementProfile)               :: Profile
 
             real(8) , dimension(9)            :: UD_Variable
             integer                           :: UD_ID, UD_Length, UD_VariableType, VariableType, VariableLength
@@ -112,8 +114,15 @@ module ModHyperView
 
 
                     nelem = size( FEA%ElementList )
-                    ngp = size(FEA%ElementList(1)%el%GaussPoints)
                     nnodes = size(FEA%ElementList(1)%El%ElementNodes)
+                    
+                    call FEA%ElementList(1)%El%GetProfile(Profile)
+                    if (Profile%ElementType == 420) then! Hexa20 Element
+                        ngp = 20
+                    else
+                        ngp = size(FEA%ElementList(1)%el%GaussPoints)
+                    end if
+                    
                     allocate( GaussPointlValues( nelem , ngp , 6 ) )
                     allocate( Conec(nelem , nnodes ) )
 
@@ -139,8 +148,15 @@ module ModHyperView
                 case (VariableNames%LogarithmicStrain)
 
                     nelem = size( FEA%ElementList )
-                    ngp = size(FEA%ElementList(1)%el%GaussPoints)
                     nnodes = size(FEA%ElementList(1)%El%ElementNodes)
+                    
+                    call FEA%ElementList(1)%El%GetProfile(Profile)
+                    if (Profile%ElementType == 420) then! Hexa20 Element
+                        ngp = 20
+                    else
+                        ngp = size(FEA%ElementList(1)%el%GaussPoints)
+                    end if
+                    
                     allocate( GaussPointlValues( nelem , ngp , 6 ) )
                     allocate( Conec(nelem , nnodes ) )
 
@@ -167,14 +183,20 @@ module ModHyperView
                     deallocate(GaussPointlValues, Conec)
 
 
-
                  case (VariableNames%UserDefined)
 
                     ! TODO (Jan#1#11/18/15): Colocar para exportar todos os dados do usuário também
 
                     nelem = size( FEA%ElementList )
-                    ngp = size(FEA%ElementList(1)%el%GaussPoints)
                     nnodes = size(FEA%ElementList(1)%El%ElementNodes)
+                    
+                    call FEA%ElementList(1)%El%GetProfile(Profile)
+                    if (Profile%ElementType == 420) then! Hexa20 Element
+                        ngp = 20
+                    else
+                        ngp = size(FEA%ElementList(1)%el%GaussPoints)
+                    end if
+                    
                     allocate( GaussPointlValues( nelem , ngp , 6 ) )
                     allocate( Conec(nelem , nnodes ) )
                     GaussPointlValues = 0.0d0
