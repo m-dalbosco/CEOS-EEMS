@@ -522,11 +522,11 @@ module ConstitutiveModelLibrary
 
                 modelID = ConstitutiveModels%ViscoelasticMatrixFiberModel
         
-            elseif ( Comp%CompareStrings('neo_hookean_fiber_recruit', model) .and. (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) ) then
+            elseif ( Comp%CompareStrings('neo_hookean_fiber_recruit', model) .and. ((AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) .OR. (AnalysisSettings%ElementTech == ElementTechnologies%Reduced_Integration)) ) then
 
                 modelID = ConstitutiveModels%NeoHookeanFiberRecruitModel
 
-            elseif ( Comp%CompareStrings('neo_hookean_fiber_reinf', model) .and. (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) ) then
+            elseif ( Comp%CompareStrings('neo_hookean_fiber_reinf', model) .and. ((AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) .OR. (AnalysisSettings%ElementTech == ElementTechnologies%Reduced_Integration)) ) then
 
                 modelID = ConstitutiveModels%NeoHookeanFiberReinfModel
             

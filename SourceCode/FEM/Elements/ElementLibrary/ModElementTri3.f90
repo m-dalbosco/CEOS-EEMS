@@ -60,6 +60,7 @@ module ElementTri3
             IsQuadratic = .false.                          , &
             GeometryType = GeometryTypes % Triangle        , &
             FullIntegrationCapable = .true.                , &
+            ReducedIntegrationCapable = .false.            , &
             MeanDilatationCapable=.true.                   , &
             ElementDimension = 2 )
 

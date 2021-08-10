@@ -243,6 +243,8 @@ contains
         ! Option Element Technology
         if (DataFile%CompareStrings(ListOfValues(5),"Full Integration")) then
             AnalysisSettings%ElementTech=ElementTechnologies%Full_Integration
+        elseif (DataFile%CompareStrings(ListOfValues(5),"Reduced Integration")) then
+            AnalysisSettings%ElementTech=ElementTechnologies%Reduced_Integration
         elseif (DataFile%CompareStrings(ListOfValues(5),"Mean Dilatation")) then
             AnalysisSettings%ElementTech=ElementTechnologies%Mean_Dilatation
         else
@@ -955,8 +957,12 @@ contains
                             ElemType = ElementTypes%Tetra10
                         case (186) ! Ansys Element 186 - Hexa20
 							 ndime = 3
-                             ElemType = ElementTypes%Hexa20
-                            
+                             if (AnalysisSettings%ElementTech==ElementTechnologies%Full_Integration) then
+                                 ElemType = ElementTypes%Hexa20
+                             elseif  (AnalysisSettings%ElementTech==ElementTechnologies%Reduced_Integration) then
+                                 ElemType = ElementTypes%Hexa20R
+                             endif
+ 
                         case default
                             write(*,*)trim(Line)
                             stop 'Error: Ansys Element Type Not Identified'
@@ -1043,7 +1049,7 @@ contains
                             end do
                             
                     ! Leitura do elemento Hexa20 (2 linhas de leitura)    
-                    elseif (ElemType == ElementTypes%Hexa20) then    
+                    elseif ((ElemType == ElementTypes%Hexa20) .OR. (ElemType == ElementTypes%Hexa20R)) then    
 						 
 						    do while ( .not. Compare(AuxString(1),'-1') )
 

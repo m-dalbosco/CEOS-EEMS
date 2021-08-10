@@ -24,18 +24,19 @@ module ElementLibrary
     use ElementHexa8
     use ElementTetra10
     use ElementHexa20
+    use ElementHexa20R
 
     ! Elements ID used in the code: [Geometry][InterpolationDegree][ElementTechnology]
     !
     ! [Geometry]            -> [ 1=Triangle ; 2=Quadrilateral ; 3=Tetrahedra ; 4=Hexahedra ]
     ! [InterpolationDegree] -> [ 1=Linear ;	2=Quadratic ]
-    ! [ElementTechnology]   -> [ 0=Full Integration ; 2,3...n=Set by User ]
+    ! [ElementTechnology]   -> [ 0=Full Integration ; 1=Reduced Integration 2,3...n=Set by User ]
 	! ------------------------------------------------------------------------------------------
 	type ClassElementTypes
         integer :: Tri3   = 110	, Tri6	  = 120
         integer :: Quad4  = 210	, Quad9   = 220
         integer :: Tetra4 = 310 , Tetra10 = 320
-        integer :: Hexa8  = 410 , Hexa20  = 420
+        integer :: Hexa8  = 410 , Hexa20  = 420 , Hexa20R  = 421
     end type
 
     type(ClassElementTypes),parameter :: ElementTypes = ClassElementTypes()
@@ -77,6 +78,7 @@ module ElementLibrary
             type(ClassElementHexa8)   , pointer :: ElHexa8    => null()
             type(ClassElementTetra10) , pointer :: ElTetra10  => null()
             type(ClassElementHexa20)  , pointer :: ElHexa20   => null()
+            type(ClassElementHexa20R)  , pointer :: ElHexa20R   => null()
      	    !************************************************************************************
 
 		    !************************************************************************************
@@ -109,6 +111,11 @@ module ElementLibrary
                     
                     allocate(ElHexa20)
                     Element => ElHexa20
+                    
+                case (ElementTypes % Hexa20R)
+                    
+                    allocate(ElHexa20R)
+                    Element => ElHexa20R
 
                 case (ElementTypes % Tetra10)
 
@@ -171,6 +178,10 @@ LOOP:      do el = 1 , size(AvailableElements)
                     IF (.not.AvailableElements(el)%AcceptFullIntegration) then
                         cycle LOOP
                     ENDIF
+                ELSEIF (ElementTech==ElementTechnologies%Reduced_Integration) then
+                    IF (.not.AvailableElements(el)%AcceptReducedIntegration) then
+                        cycle LOOP
+                    ENDIF
                 ELSEIF (ElementTech==ElementTechnologies%Mean_Dilatation) then
                     IF (.not.AvailableElements(el)%AcceptMeanDilatation) then
                         cycle LOOP
@@ -223,6 +234,10 @@ LOOP:      do el = 1 , size(AvailableElements)
                     IF (.not.AvailableElements(el)%AcceptFullIntegration) then
                         cycle LOOP
                     ENDIF
+                ELSEIF (ElementTech==ElementTechnologies%Reduced_Integration) then
+                    IF (.not.AvailableElements(el)%AcceptReducedIntegration) then
+                        cycle LOOP
+                    ENDIF
                 ELSEIF (ElementTech==ElementTechnologies%Mean_Dilatation) then
                     IF (.not.AvailableElements(el)%AcceptMeanDilatation) then
                         cycle LOOP
@@ -263,8 +278,9 @@ LOOP:      do el = 1 , size(AvailableElements)
         type(ClassElementHexa8)   :: ElHexa8
         type(ClassElementTetra10) :: ElTetra10
         type(ClassElementHexa20)  :: ElHexa20
+        type(ClassElementHexa20R)  :: ElHexa20R
 
-        NumberOfAvailableElements = 6
+        NumberOfAvailableElements = 7
 
         if (allocated(AvailableElements)) deallocate(AvailableElements)
         allocate( AvailableElements(NumberOfAvailableElements))
@@ -275,6 +291,7 @@ LOOP:      do el = 1 , size(AvailableElements)
         call ElHexa8 %GetProfile(AvailableElements(4)) ; AvailableElements(4)%ElementType = ElementTypes % Hexa8
         call ElTetra10%GetProfile(AvailableElements(5)) ; AvailableElements(5)%ElementType = ElementTypes % Tetra10
         call ElHexa20 %GetProfile(AvailableElements(6)) ; AvailableElements(6)%ElementType = ElementTypes % Hexa20
+        call ElHexa20R %GetProfile(AvailableElements(7)) ; AvailableElements(7)%ElementType = ElementTypes % Hexa20R
 
     end subroutine
 

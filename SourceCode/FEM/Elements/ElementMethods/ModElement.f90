@@ -79,6 +79,7 @@ module Element
         integer :: ElementDimension = 0
         logical :: IsQuadratic = .false.
         logical :: AcceptFullIntegration = .false.
+        logical :: AcceptReducedIntegration = .false.
         logical :: AcceptMeanDilatation = .false.
 
         contains
@@ -171,16 +172,17 @@ module Element
          !==========================================================================================
 
 
-        subroutine LoadProfile(this , ElementType , NumberOfNodes , IsQuadratic , GeometryType , FullIntegrationCapable , MeanDilatationCapable , ElementDimension )
+        subroutine LoadProfile(this , ElementType , NumberOfNodes , IsQuadratic , GeometryType , FullIntegrationCapable , ReducedIntegrationCapable , MeanDilatationCapable , ElementDimension )
             class(ClassElementProfile) :: this
             integer::ElementType,NumberOfNodes,GeometryType , ElementDimension
-            logical::IsQuadratic,FullIntegrationCapable,MeanDilatationCapable
+            logical::IsQuadratic,FullIntegrationCapable,ReducedIntegrationCapable,MeanDilatationCapable
 
             this % ElementType = ElementType
             this % NumberOfNodes = NumberOfNodes
             this % IsQuadratic = IsQuadratic
             this % GeometryType = GeometryType
             this % AcceptFullIntegration = FullIntegrationCapable
+            this % AcceptReducedIntegration = ReducedIntegrationCapable
             this % AcceptMeanDilatation = MeanDilatationCapable
             this % ElementDimension = ElementDimension
 
@@ -305,7 +307,7 @@ module Element
 
                 enddo
 
-            elseif (AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) then
+            elseif ((AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) .OR. (AnalysisSettings%ElementTech == ElementTechnologies%Reduced_Integration)) then
 
                 !Mterial and Geometric Stiffness Matrix (Nonlinear Part)
                 !Loop over gauss points

@@ -55,10 +55,11 @@ module ElementHexa20
             type(ClassElementProfile)::Profile
 
             call Profile % LoadProfile(420                 , &
-            NumberOfNodes = 20                            , &
-            IsQuadratic = .true.                          , &
+            NumberOfNodes = 20                             , &
+            IsQuadratic = .true.                           , &
             GeometryType = GeometryTypes %  Hexahedra      , &
             FullIntegrationCapable = .true.                , &
+            ReducedIntegrationCapable = .false.            , &
             MeanDilatationCapable=.false. , &
             ElementDimension = 3 )
 
@@ -284,7 +285,7 @@ module ElementHexa20
             id(17,:)=[ -R1 , -R1 ,  R0 ]
             id(18,:)=[  R1 , -R1 ,  R0 ]
             id(19,:)=[  R1 ,  R1 ,  R0 ]
-            id(20,:)=[ -R1 ,  R1 ,  R0 ] !ate aqui ok
+            id(20,:)=[ -R1 ,  R1 ,  R0 ]
 
             do i=1,8
                 DifShapeFunctions(i,1) = id(i,1)*(R1 + id(i,2)*eta)*(R1 + id(i,3)*zeta)*(id(i,1)*xi + &
@@ -371,39 +372,39 @@ module ElementHexa20
             c1 =  5.0d0/9.0d0
             c2 =  8.0d0/9.0d0
 
-            ! Mudanca na ordem dos pontos da gauss p/ pos processamento no hyperview
-            id(1,:)= [ -R1 , -R1 , -R1 ];   WeightHexa20(1) = c1**3
+            ! Gauss points ordered according to Hyperview (uses only 1-20) [checked 30.07.21 M.D.]
+            id(1,:)=[ -R1 , -R1 , -R1 ];   WeightHexa20(1) = c1**3
             id(2,:)=[  R1 , -R1 , -R1 ];   WeightHexa20(2) = c1**3
             id(3,:)=[  R1 ,  R1 , -R1 ];   WeightHexa20(3) = c1**3
-            id(4,:)= [ -R1 ,  R1 , -R1 ];   WeightHexa20(4) = c1**3
+            id(4,:)=[ -R1 ,  R1 , -R1 ];   WeightHexa20(4) = c1**3
             
-            id(5,:)= [ -R1 , -R1 ,  R1 ];   WeightHexa20(5) = c1**3            
+            id(5,:)=[ -R1 , -R1 ,  R1 ];   WeightHexa20(5) = c1**3            
             id(6,:)=[  R1 , -R1 ,  R1 ];   WeightHexa20(6) = c1**3
             id(7,:)=[  R1 ,  R1 ,  R1 ];   WeightHexa20(7) = c1**3
-            id(8,:)= [ -R1 ,  R1 ,  R1 ];   WeightHexa20(8) = c1**3
+            id(8,:)=[ -R1 ,  R1 ,  R1 ];   WeightHexa20(8) = c1**3
             
-            id(9,:)=[  R0 , -R1 , -R1 ];   WeightHexa20(9) = c2*(c1**2)
+            id(9,:)= [  R0 , -R1 , -R1 ];   WeightHexa20(9) = c2*(c1**2)
             id(10,:)=[  R1 ,  R0 , -R1 ];   WeightHexa20(10) = c2*(c1**2)
             id(11,:)=[  R0 ,  R1 , -R1 ];   WeightHexa20(11) = c2*(c1**2)
-            id(12,:)= [ -R1 , R0,-R1]; WeightHexa20(12) = c2*(c1**2)
+            id(12,:)=[ -R1 ,  R0 , -R1 ];   WeightHexa20(12) = c2*(c1**2)
             
-            id(13,:)=[  -R1 , -R1 ,  R0 ];   WeightHexa20(13) = c2*(c1**2)
-            id(14,:)=[  R1 , -R1, R0]; WeightHexa20(14) = c2*(c1**2)
+            id(13,:)=[ -R1 , -R1 ,  R0 ];   WeightHexa20(13) = c2*(c1**2)
+            id(14,:)=[  R1 , -R1 ,  R0 ];   WeightHexa20(14) = c2*(c1**2)
             id(15,:)=[  R1 ,  R1 ,  R0 ];   WeightHexa20(15) = c2*(c1**2)
-            id(16,:)= [ -R1 ,  R1 ,  R0 ];   WeightHexa20(16) = c2*(c1**2)
+            id(16,:)=[ -R1 ,  R1 ,  R0 ];   WeightHexa20(16) = c2*(c1**2)
             
-            id(17,:)= [ R0 , -R1 ,  R1 ];   WeightHexa20(17) = c2*(c1**2)
-            id(18,:)=[  R1 , R0 ,  R1 ];   WeightHexa20(18) = c2*(c1**2)
+            id(17,:)=[  R0 , -R1 ,  R1 ];   WeightHexa20(17) = c2*(c1**2)
+            id(18,:)=[  R1 ,  R0 ,  R1 ];   WeightHexa20(18) = c2*(c1**2)
             id(19,:)=[  R0 ,  R1 ,  R1 ];   WeightHexa20(19) = c2*(c1**2)
-            id(20,:)= [ -R1 ,  R0 ,  R1 ];   WeightHexa20(20) = c2*(c1**2)
+            id(20,:)=[ -R1 ,  R0 ,  R1 ];   WeightHexa20(20) = c2*(c1**2)
             
-            id(21,:)=[  R0 , R0 ,  -R1 ];   WeightHexa20(21) = c1*(c2**2)
-            id(22,:)=[  R0 ,  -R1 ,  R0 ];   WeightHexa20(22) = c1*(c2**2)
-            id(23,:)=[  -R1 ,  R0 ,  R0 ];   WeightHexa20(23) = c1*(c2**2)
-            id(24,:)= [ R0 ,  R0 ,  R0 ];   WeightHexa20(24) = c2**3
+            id(21,:)=[  R0 ,  R0 , -R1 ];   WeightHexa20(21) = c1*(c2**2)
+            id(22,:)=[  R0 , -R1 ,  R0 ];   WeightHexa20(22) = c1*(c2**2)
+            id(23,:)=[ -R1 ,  R0 ,  R0 ];   WeightHexa20(23) = c1*(c2**2)
+            id(24,:)=[  R0 ,  R0 ,  R0 ];   WeightHexa20(24) = c2**3
             id(25,:)=[  R1 ,  R0 ,  R0 ];   WeightHexa20(25) = c1*(c2**2)
-            id(26,:)=[  r0 ,  r1 ,  r0 ];   weighthexa20(26) = c1*(c2**2) 
-            id(27,:)=[  r0 ,  r0 , r1 ];   weighthexa20(27) = c1*(c2**2)         
+            id(26,:)=[  R0 ,  R1 ,  R0 ];   Weighthexa20(26) = c1*(c2**2) 
+            id(27,:)=[  R0 ,  R0 ,  R1 ];   Weighthexa20(27) = c1*(c2**2)         
             
             NaturalCoordHexa20=id*x
 

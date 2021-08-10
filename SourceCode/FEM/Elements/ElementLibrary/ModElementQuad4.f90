@@ -61,6 +61,7 @@ module ElementQuad4
             IsQuadratic = .false.                          , &
             GeometryType = GeometryTypes % Quadrilateral   , &
             FullIntegrationCapable = .true.                , &
+            ReducedIntegrationCapable = .false.            , &
             MeanDilatationCapable=.true. , &
             ElementDimension = 2 )
 

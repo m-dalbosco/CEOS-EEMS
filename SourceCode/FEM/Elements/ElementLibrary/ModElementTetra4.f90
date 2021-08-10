@@ -61,6 +61,7 @@ module ElementTetra4
             IsQuadratic = .false.                          , &
             GeometryType = GeometryTypes % Tetrahedra      , &
             FullIntegrationCapable = .true.                , &
+            ReducedIntegrationCapable = .false.            , &
             MeanDilatationCapable=.true.                   , &
             ElementDimension = 3 )
 

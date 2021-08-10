@@ -45,7 +45,7 @@ module ModAnalysis
 
     !Element Technology
     type ClassElementTechnologies
-        integer :: Full_Integration=1, Mean_Dilatation=2
+        integer :: Full_Integration=1, Mean_Dilatation=2, Reduced_Integration=3
     end type
     type (ClassElementTechnologies), parameter :: ElementTechnologies = ClassElementTechnologies()
 

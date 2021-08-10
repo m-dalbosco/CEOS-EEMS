@@ -75,6 +75,7 @@
 		<Filter Name="Elements">
 		<Filter Name="ElementLibrary">
 		<File RelativePath="..\..\SourceCode\FEM\Elements\ElementLibrary\ModElementHexa20.f90"/>
+		<File RelativePath="..\..\SourceCode\FEM\Elements\ElementLibrary\ModElementHexa20R.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementHexa8.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementLibrary.f90"/>
 		<File RelativePath="..\..\SourceCode\FEM\elements\ElementLibrary\ModElementQuad4.f90"/>
