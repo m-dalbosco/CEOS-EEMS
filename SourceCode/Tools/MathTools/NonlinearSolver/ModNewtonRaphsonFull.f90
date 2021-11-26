@@ -117,7 +117,7 @@ contains
 
             if (this%ShowInfo) write(*,'(12x,a,i3,a,e16.9)') 'IT: ',IT ,'  NORM: ',normR
             
-            if ((it==1) .AND. (SOE%isPeriodic)) this%tol=normR/1000
+            !if ((it==1) .AND. (SOE%isPeriodic)) this%tol=normR/1000
             
             if ((it>0) .AND. (normR<this%tol)) then
                 call this%Status%SetSuccess()
@@ -148,11 +148,11 @@ contains
                 case default
                 end select
 
-            if (it>15) then
+            if (it>20) then
                 eta = (sqrt(5.0D0)-1)/2
-                if (it==16) then
+                if (it==21) then
                     write(*,*)
-                    write(*,'(12x,a)') 'More than 15 attempts. Possible stationary point. Attempting to regularize...'
+                    write(*,'(12x,a)') 'More than 21 attempts. Possible stationary point. Attempting to regularize...'
                     write(*,*)
                 endif
             else

@@ -614,7 +614,7 @@ module NeoHookeanFiberRecruit
             ! Internal variables
             ! -----------------------------------------------------------------------------------
             integer, parameter :: Scalar=1,Vector=2,Tensor=3
-            real (8) :: h , c(6), I(3,3), e(3,3), eV(6), levm, detF, p
+            real (8) :: I(3,3), e(3,3), eV(6), levm, detF, p, lambda, egvecs(3,3), egvals(3), lambdaSMC, C(3,3), A(3,3), mSMC(3)
 		    !************************************************************************************
 
 		    !___________________   WARNIG! DO NOT CHANGE OR ERASE THIS BLOCK    _________________
@@ -648,7 +648,7 @@ module NeoHookeanFiberRecruit
             
                 case(0)
             
-                    Length = 5
+                    Length = 7
             
                 case(1)
             
@@ -696,6 +696,32 @@ module NeoHookeanFiberRecruit
                     
                     p = this%Properties%Km*( det(this%F) - 1.0d0  )
                     Variable = p
+                    
+                case (6)
+                    
+                    Name = 'Max principal stretch'
+                    VariableType = Scalar
+                    Length=1
+                    
+                    call EigenProblemSym3D (matmul(transpose(this%F),this%F), egvals, egvecs)
+                    
+                    lambda = sqrt(maxval(egvals))
+                    Variable = lambda
+                    
+                case (7)
+                    
+                    Name = 'SMC stretch'
+                    VariableType = Scalar
+                    Length=1
+                    
+                    mSMC(1)=0.93969262d0
+                    mSMC(2)=0.0d0
+                    mSMC(3)=0.342020143d0
+                    C = matmul(transpose(this%F),this%F)
+                    A = Tensor_Product(mSMC,mSMC)
+
+                    lambdaSMC = sqrt(Tensor_Inner_Product(C,A))
+                    Variable = lambdaSMC
             
                 case default
                     call Error("Error retrieving result :: GetResult")

@@ -714,9 +714,8 @@ module ModMultiscaleBoundaryConditions
             ! Adicionando 1 na diagonal principal
             Kg%Val(FixedSupportSparseMapONE) = 1.0d0
 
-            ! Corrigindo resíduo por rearranjo de equações
-            !R(this%FixedSupport%dof) = 0.0d0
-            R(this%FixedSupport%dof) = Udirichlet(this%FixedSupport%dof)
+            ! Corrigindo resíduo (flutuacao nula nos vertices)
+            R(this%FixedSupport%dof) = 0.0d0
 
             !**************************************************************
         end if
