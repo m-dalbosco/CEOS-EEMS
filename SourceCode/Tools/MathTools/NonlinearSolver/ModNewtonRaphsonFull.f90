@@ -50,7 +50,7 @@ contains
         real(8),dimension(:)          :: Xguess , X
 
         integer :: it, i
-        real(8) :: normR , norma, eta
+        real(8) :: normR , normR0, eta
         real(8),allocatable,dimension(:) :: R , DX, DXFull
 
         real(8),dimension(:,:),pointer :: GFull
@@ -117,9 +117,9 @@ contains
 
             if (this%ShowInfo) write(*,'(12x,a,i3,a,e16.9)') 'IT: ',IT ,'  NORM: ',normR
             
-            !if ((it==1) .AND. (SOE%isPeriodic)) this%tol=normR/1000
+            if (it==0) normR0=normR
             
-            if ((it>0) .AND. (normR<this%tol)) then
+            if ((it>0) .AND. (normR<normR0*this%tol)) then
                 call this%Status%SetSuccess()
                 if (this%ShowInfo) write(*,'(12x,a,i3,a)')'Converged in ',IT,' iterations'
                 return
