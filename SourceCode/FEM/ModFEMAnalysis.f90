@@ -1398,7 +1398,7 @@ module FEMAnalysis
             use ModMultiscalePeriodicFEMSoE
 
             implicit none
-
+            
             ! Input variables
             ! -----------------------------------------------------------------------------------
             type (ClassAnalysis)                                    :: AnalysisSettings
@@ -1414,26 +1414,37 @@ module FEMAnalysis
             real(8), allocatable, dimension(:) :: U , R , DeltaUTay , UTay_alpha0, Uconverged, Fext , DeltaFext
             real(8) :: DeltaTime , Time_alpha0
             real(8) :: alpha, alpha_max, alpha_min, alpha_aux
-            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e, gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep
+            integer :: LC , ST , nSteps, nLoadCases ,  CutBack, SubStep, e, gp, nDOF, FileID_FEMAnalysisResults, Flag_EndStep, last_LC, last_ST, init_LC, init_ST
             real(8), parameter :: GR= (1.0d0 + dsqrt(5.0d0))/2.0d0
 
             integer, allocatable, dimension(:) :: KgValZERO, KgValONE
             integer :: contZERO, contONE
             
             type(ClassMultiscalePeriodicFEMSoE) :: FEMSoE
-
-            FileID_FEMAnalysisResults = 42
-            open (FileID_FEMAnalysisResults,file='FEMAnalysis.result',status='unknown')
-
+ 
             !************************************************************************************
 
             !************************************************************************************
             ! QUASI-STATIC ANALYSIS
             !***********************************************************************************
+            
             call AnalysisSettings%GetTotalNumberOfDOF (GlobalNodesList, nDOF)
-
-            write(FileID_FEMAnalysisResults,*) 'Total Number of DOF = ', nDOF
-
+             allocate( U(nDOF) )
+            
+            U = 0.0d0
+            FileID_FEMAnalysisResults = 42
+            if (AnalysisSettings%Restart) then
+                call RestartAnalysis(AnalysisSettings, ElementList, GlobalNodesList, last_LC,last_ST,U)
+                open (FileID_FEMAnalysisResults,file='FEMAnalysis.result',status='old',access='append')
+            else
+                ! Escrevendo os resultados para o tempo zero
+                ! NOTE (Thiago#1#11/19/15): OBS.: As condições de contorno iniciais devem sair do tempo zero.
+                open (FileID_FEMAnalysisResults,file='FEMAnalysis.result',status='unknown')
+                write(FileID_FEMAnalysisResults,*) 'Total Number of DOF = ', nDOF
+                Flag_EndStep = 1
+                call WriteFEMResults( U, 0.0d0, 1, 1, 0, 0, Flag_EndStep, FileID_FEMAnalysisResults, NumberOfIterations=0  )
+            endif
+            
             FEMSoE % ElementList => ElementList
             FEMSoE % AnalysisSettings = AnalysisSettings
             FEMSoE % GlobalNodesList => GlobalNodesList
@@ -1442,12 +1453,12 @@ module FEMAnalysis
             FEMSoE % KgRed => KgRed
 
             FEMSoE % isPeriodic = .TRUE.
-            
+           
             allocate( FEMSoE % Fint(nDOF) , FEMSoE % Fext(nDOF) , FEMSoE % UTay0(nDOF) , FEMSoE % UTay1(nDOF) )
             allocate(Fext(1),DeltaFext(1)) !used to carry alpha into the GetBoundaryConditions routine
 
             ! Allocating arrays
-            allocate( R(nDOF), U(nDOF), DeltaUTay(nDOF), UTay_alpha0(nDOF), Uconverged(nDOF)  )
+            allocate( R(nDOF), DeltaUTay(nDOF), UTay_alpha0(nDOF), Uconverged(nDOF)  )
 
             allocate(FEMSoE%TMat)
             write(*,*) ''
@@ -1457,28 +1468,44 @@ module FEMAnalysis
             FEMSoE%TMatDescr(4) = 'F'
             write(*,*) 'Done!'
             write(*,*)            
-
-            U = 0.0d0
+            
             UTay_alpha0 = 0.0d0
-
+           
             nLoadCases = BC%GetNumberOfLoadCases()
-
-            ! Escrevendo os resultados para o tempo zero
-            ! NOTE (Thiago#1#11/19/15): OBS.: As condições de contorno iniciais devem sair do tempo zero.
-            Flag_EndStep = 1
-            call WriteFEMResults( U, 0.0d0, 1, 1, 0, 0, Flag_EndStep, FileID_FEMAnalysisResults, NumberOfIterations=0  )
-
+            
+            if (.not.AnalysisSettings%Restart) then
+                init_LC = 1
+            elseif (nLoadCases .gt. last_LC) then
+                init_LC = last_LC+1
+            elseif (nLoadCases .eq. last_LC) then
+                init_LC = last_LC
+            else
+                write(*,*) '** Last load case already calculated! **'
+                STOP
+            endif
 
             !LOOP - LOAD CASES
-            LOAD_CASE:  do LC = 1 , nLoadCases
+            LOAD_CASE:  do LC = init_LC , nLoadCases
 
                 write(*,'(a,i3)')'Load Case: ',LC
                 write(*,*)''
 
                 nSteps = BC%GetNumberOfSteps(LC)
-
+                
+                if (.not.AnalysisSettings%Restart) then
+                    init_ST = 1
+                elseif (nSteps .gt. last_ST) then
+                    init_ST = last_ST+1
+                elseif (nSteps .eq. last_ST) then
+                    write(*,*) '** Last load step already calculated! Cycling to next load case...**'
+                    cycle LOAD_CASE
+                else
+                    write(*,*) '** Error restarting load step. **'
+                    STOP
+                endif
+                
                ! LOOP - STEPS
-                STEPS:  do ST = 1 , nSteps
+                STEPS:  do ST = init_ST , nSteps
 
                     write(*,'(4x,a,i3,a,i3,a)')'Step: ',ST,' (LC: ',LC,')'
                     write(*,*)''
@@ -1486,7 +1513,7 @@ module FEMAnalysis
                     ! Mapeando os graus de liberdade da matrix esparsa para a aplicação
                     ! da CC de deslocamento prescrito
                     !-----------------------------------------------------------------------------------
-                    if ( (LC == 1) .and. (ST == 1) ) then
+                    if ( (LC == init_LC) .and. (ST == init_ST) ) then
 
                         allocate(BC%FixedSupport%dof(24))
                         BC%FixedSupport%dof = FEMSoE%verticesDOF                       
@@ -1499,7 +1526,7 @@ module FEMAnalysis
                         FEMSoE%FixedSupportSparseMapONE(:) = KgValONE(1:contONE)
 
                         deallocate( KgValZERO, KgValONE )
-
+                        
                     end if
                     !-----------------------------------------------------------------------------------
                     
@@ -2781,6 +2808,138 @@ module FEMAnalysis
 
         end subroutine
         !==========================================================================================
+        
+        
+    !==========================================================================================
+    ! Subroutine Description:
+    !==========================================================================================
+    subroutine  RestartAnalysis(AnalysisSettings, ElementList, GlobalNodesList, last_LC,last_ST,U)
+
+        !************************************************************************************
+        ! DECLARATIONS OF VARIABLES
+        !************************************************************************************
+        ! Modules and implicit declarations
+        ! -----------------------------------------------------------------------------------
+        use Parser
+        use Interfaces
+        use ModStatus
+        use ModIO
+        implicit none
+        
+        ! Input variables
+        ! -----------------------------------------------------------------------------------
+        type (ClassAnalysis)                                    :: AnalysisSettings
+           
+        ! Input/output variables
+        ! -----------------------------------------------------------------------------------
+        type (ClassElementsWrapper),     pointer, dimension(:)  :: ElementList
+        type (ClassNodes),               pointer, dimension(:)  :: GlobalNodesList
+        
+        ! Output variables
+        ! -----------------------------------------------------------------------------------
+        integer                                     :: last_LC, last_ST
+        real(8) , dimension(:) :: U
+
+        ! Internal variables
+        ! -----------------------------------------------------------------------------------
+        type(ClassParser)                         :: ResultFile
+        type(ClassStatus)                         :: Status
+        integer :: TotalNDOF, LoadCase, Step, CutBack, SubStep, el, gp, i, FileNumber
+        real(8) :: Time
+        character(len=255) :: OptionName, OptionValue, String, FileName
+        integer :: Flag_EndStep, NumberOfIterations
+
+        !************************************************************************************
+
+        write(*,*) 'Restarting analysis...'
+
+        FileName='FEMAnalysis.result'
+        FileNumber = 222
+        call ResultFile%Setup(FileName,FileNumber)
+
+        call ResultFile%GetNextOption(OptionName,OptionValue)
+
+        TotalNDOF = OptionValue
+
+        LOOP_TIME :do while (.true.)
+
+
+            call ResultFile%GetNextOption(OptionName,OptionValue)
+
+            if (EOF(ResultFile)) exit LOOP_TIME
+
+            Time = OptionValue
+
+            call ResultFile%GetNextOption(OptionName,OptionValue)
+
+            LoadCase = OptionValue
+
+            call ResultFile%GetNextOption(OptionName,OptionValue)
+
+            Step = OptionValue
+
+            call ResultFile%GetNextOption(OptionName,OptionValue)
+
+            CutBack = OptionValue
+
+            call ResultFile%GetNextOption(OptionName,OptionValue)
+
+            Substep = OptionValue
+
+            call ResultFile%GetNextOption(OptionName,OptionValue)
+
+            Flag_EndStep = OptionValue
+
+            call ResultFile%GetNextOption(OptionName,OptionValue)
+
+            NumberOfIterations = OptionValue
+            
+            last_LC = LoadCase
+            last_ST = Step
+
+            if (Flag_EndStep .eq. 1) then !Restart only full steps
+                
+                do i = 1, TotalNDOF
+                    call ResultFile%GetNextString(String)
+                    U(i) = String
+                enddo
+
+                ! Update Coordinates
+                if (AnalysisSettings%NLAnalysis == .true.) then
+                    call UpdateMeshCoordinates(GlobalNodesList,AnalysisSettings,U)
+                endif            
+            
+                ! Update stress and internal variables
+                call SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Status)
+
+                ! SAVING THE CONVERGED STATE
+                ! ----------------------------------------------------------------------------------
+                do el=1,size(ElementList)
+                    
+                    do gp=1,size(ElementList(el)%el%GaussPoints)
+                        call ElementList(el)%el%GaussPoints(gp)%SwitchConvergedState()
+                    enddo
+                    
+                    if (AnalysisSettings%EmbeddedElements) then !with fiber reinforcement
+                    
+                        do gp=1,size(ElementList(el)%El%ExtraGaussPoints)
+                            call ElementList(el)%El%ExtraGaussPoints(gp)%SwitchConvergedState()
+                        enddo
+                    
+                    endif
+                    
+                enddo
+                
+            endif
+            
+        enddo LOOP_TIME
+
+        call ResultFile%CloseFile
+        
+        write(*,*) 'Done!'
+        write(*,*) ''
+
+    end subroutine
 
 
 end module

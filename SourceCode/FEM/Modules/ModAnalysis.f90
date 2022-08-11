@@ -99,6 +99,7 @@ module ModAnalysis
         logical ::  NLAnalysis
         logical ::  MultiscaleAnalysis
         logical ::  EmbeddedElements
+        logical ::  Restart
 
         integer ::  NDOFnode   , AnalysisDimension
         integer ::  BRowSize   , DSize

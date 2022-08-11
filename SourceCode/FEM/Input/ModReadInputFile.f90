@@ -175,13 +175,13 @@ contains
         type (ClassAnalysis) :: AnalysisSettings
         character(len=255)::string
 
-        character(len=100),dimension(8)::ListOfOptions,ListOfValues
-        logical,dimension(8)::FoundOption
+        character(len=100),dimension(9)::ListOfOptions,ListOfValues
+        logical,dimension(9)::FoundOption
         integer :: i
 
 
         ListOfOptions=["Problem Type","Analysis Type","Nonlinear Analysis","Hypothesis of Analysis", &
-                        "Element Technology","Maximum Cut Backs","Multiscale Analysis", "Multiscale Model"]
+                        "Element Technology","Maximum Cut Backs","Multiscale Analysis", "Multiscale Model","Restart"]
 
 
         call DataFile%FillListOfOptions(ListOfOptions,ListOfValues,FoundOption)
@@ -278,6 +278,15 @@ contains
             AnalysisSettings%MultiscaleModel = MultiscaleModels%MinimalLinearD1
         elseif (DataFile%CompareStrings(ListOfValues(8),"MinimalLinearD3")) then
             AnalysisSettings%MultiscaleModel = MultiscaleModels%MinimalLinearD3            
+        else
+            call Error( "Multiscale Analysis not identified" )
+        endif
+        
+        ! Option Multiscale Analysis
+        if (DataFile%CompareStrings(ListOfValues(9),"True")) then
+            AnalysisSettings%Restart=.true.
+        elseif (DataFile%CompareStrings(ListOfValues(9),"False")) then
+            AnalysisSettings%Restart=.false.
         else
             call Error( "Multiscale Analysis not identified" )
         endif
