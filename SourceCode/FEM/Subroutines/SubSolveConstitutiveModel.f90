@@ -75,13 +75,6 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
                         
             write(37,'(a)') Trim(Status%ErrorDescription)
             write(37,'(a,i6,a,f7.4)') 'Failed in element ',e,' at time ',Time
-            write(37,'(a)') 'Nodal coordinates (X Y Z):'
-            
-            nNodes = ElementList(e)%El%GetNumberOfNodes()
-            
-            do i=1,nNodes
-                write(37,'(3(1X,f12.6))') (ElementList(e)%El%ElementNodes(i)%Node%Coord(j), j=1,3)
-            enddo
             
             write (37,*) ''   
             

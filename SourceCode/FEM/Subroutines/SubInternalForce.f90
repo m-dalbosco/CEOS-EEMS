@@ -71,13 +71,6 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
                         
             write(37,'(a)') Trim(Status%ErrorDescription)
             write(37,'(a,i6)') 'Failed in element ',e
-            write(37,'(a)') 'Nodal coordinates (X Y Z):'
-            
-            nNodes = ElementList(e)%El%GetNumberOfNodes()
-            
-            do i=1,nNodes
-                write(37,'(3(1X,f12.6))') (ElementList(e)%El%ElementNodes(i)%Node%Coord(j), j=1,3)
-            enddo
             
             write (37,*) ''   
             
