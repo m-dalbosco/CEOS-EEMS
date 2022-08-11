@@ -32,8 +32,9 @@ module ConstitutiveModelLibrary
     use ModViscoelasticMatrix
     use ModViscoelasticMatrixFiber
     use NeoHookeanFiberRecruit
+    use NeoHookeanFiberRecDam
     use NeoHookeanFiberReinf
-
+    
     ! Constitutive Models ID registered:
     type ClassConstitutiveModels
         integer   :: GeneralizedHookesLawModel      = 1
@@ -50,7 +51,8 @@ module ConstitutiveModelLibrary
         integer   :: ViscoelasticMatrixModel        = 12
         integer   :: ViscoelasticMatrixFiberModel   = 13
         integer   :: NeoHookeanFiberRecruitModel    = 14
-        integer   :: NeoHookeanFiberReinfModel      = 15
+        integer   :: NeoHookeanFiberRecDamModel        = 15
+        integer   :: NeoHookeanFiberReinfModel      = 16
     end type
 
 	!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -123,6 +125,7 @@ module ConstitutiveModelLibrary
             
             type(ClassNeoHookeanFiberReinf_3D)         , pointer , dimension(:) :: NHFR_3D
 
+            type(ClassNeoHookeanFiberRecDam_3D) , pointer , dimension(:) :: NHFRECD_3D
 
 		    !************************************************************************************
 
@@ -398,6 +401,22 @@ module ConstitutiveModelLibrary
                 ! -------------------------------------------------------------------------------
                     
                 ! -------------------------------------------------------------------------------
+                ! Neo-Hookean matrix with fiber recruitment and damage
+                ! -------------------------------------------------------------------------------
+                case (ConstitutiveModels % NeoHookeanFiberRecDamModel)
+
+                    if ( AnalysisSettings%Hypothesis == HypothesisOfAnalysis%ThreeDimensional ) then
+
+                            allocate( NHFRECD_3D(nGP) )
+                            GaussPoints => NHFRECD_3D
+
+                    else
+                            call Error("Error: Neo Hookean Fiber Recruitment Model with Damage - analysis type not available.")
+
+                    endif
+                ! -------------------------------------------------------------------------------
+                    
+                ! -------------------------------------------------------------------------------
                 ! Neo-Hookean Fiber Reinforced Model
                 ! -------------------------------------------------------------------------------
                 case (ConstitutiveModels % NeoHookeanFiberReinfModel)
@@ -525,6 +544,10 @@ module ConstitutiveModelLibrary
             elseif ( Comp%CompareStrings('neo_hookean_fiber_recruit', model) .and. ((AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) .OR. (AnalysisSettings%ElementTech == ElementTechnologies%Reduced_Integration)) ) then
 
                 modelID = ConstitutiveModels%NeoHookeanFiberRecruitModel
+                
+             elseif ( Comp%CompareStrings('neo_hookean_fiber_recruit_damage', model) .and. ((AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) .OR. (AnalysisSettings%ElementTech == ElementTechnologies%Reduced_Integration)) ) then
+
+                modelID = ConstitutiveModels%NeoHookeanFiberRecDamModel
 
             elseif ( Comp%CompareStrings('neo_hookean_fiber_reinf', model) .and. ((AnalysisSettings%ElementTech == ElementTechnologies%Full_Integration) .OR. (AnalysisSettings%ElementTech == ElementTechnologies%Reduced_Integration)) ) then
 
