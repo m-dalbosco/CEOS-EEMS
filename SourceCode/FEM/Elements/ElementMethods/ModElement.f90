@@ -592,6 +592,8 @@ module Element
                     !Get Cauchy Stress
                     CauchyFiber => this%ExtraGaussPoints(gp)%Stress
                     
+                    if (norm(CauchyFiber) >= 1.0d-13) then
+                    
                     !Get natural coordinates and weight
                     NaturalCoordFiber = this%ExtraGaussPoints(gp)%AdditionalVariables%NaturalCoord
                     WeightFiber = this%ExtraGaussPoints(gp)%AdditionalVariables%Weight
@@ -613,6 +615,8 @@ module Element
                    
                     !Element internal force vector
                     call MatrixVectorMultiply ( 'T', B, CauchyFiber( 1:size(B,1) ), Fe, 0.5d0*dVf*WeightFiber, 1.0d0 ) !y := alpha*op(A)*x + beta*y
+                    
+                    endif
 
                 enddo
                 
