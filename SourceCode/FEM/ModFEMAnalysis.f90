@@ -2894,16 +2894,16 @@ module FEMAnalysis
 
             NumberOfIterations = OptionValue
             
-            last_LC = LoadCase
-            last_ST = Step
+            do i = 1, TotalNDOF
+                    call ResultFile%GetNextString(String)
+                    U(i) = String
+            enddo
 
             if (Flag_EndStep .eq. 1) then !Restart only full steps
                 
-                do i = 1, TotalNDOF
-                    call ResultFile%GetNextString(String)
-                    U(i) = String
-                enddo
-
+                last_LC = LoadCase
+                last_ST = Step
+                
                 ! Update Coordinates
                 if (AnalysisSettings%NLAnalysis == .true.) then
                     call UpdateMeshCoordinates(GlobalNodesList,AnalysisSettings,U)
