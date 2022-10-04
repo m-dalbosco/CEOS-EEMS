@@ -177,6 +177,7 @@ contains
 
         character(len=100),dimension(9)::ListOfOptions,ListOfValues
         logical,dimension(9)::FoundOption
+        logical :: Result_exists
         integer :: i
 
 
@@ -282,13 +283,22 @@ contains
             call Error( "Multiscale Analysis not identified" )
         endif
         
-        ! Option Multiscale Analysis
-        if (DataFile%CompareStrings(ListOfValues(9),"True")) then
-            AnalysisSettings%Restart=.true.
-        elseif (DataFile%CompareStrings(ListOfValues(9),"False")) then
+        ! Option Restarting (only for Periodic MS model)
+        if ((DataFile%CompareStrings(ListOfValues(9),"True")) .AND. (AnalysisSettings%MultiscaleModel .eq. MultiscaleModels%Periodic)) then
+            inquire(file='FEMAnalysis.result',exist=Result_exists) !Check if result file exists             
+                if (Result_exists) then
+                    AnalysisSettings%Restart=.true.
+                else
+                    write(*,*) ''
+                    write(*,*) '** ERROR: no FEMAnalysis.result found! **'
+                    write(*,*) ''
+                    STOP
+                endif
+        elseif ((DataFile%CompareStrings(ListOfValues(9),"False")) .AND. (AnalysisSettings%MultiscaleModel .eq. MultiscaleModels%Periodic)) then
             AnalysisSettings%Restart=.false.
         else
-            call Error( "Multiscale Analysis not identified" )
+            write(*,*) ''
+            call Error( "Restart option not identified or not implemented" )
         endif
 
 

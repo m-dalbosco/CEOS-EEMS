@@ -94,7 +94,11 @@ program MAIN
     ! ---------------------------------------------------------------------------------------------
 	call ReadAndCreateAnalysis(Analysis, SettingsFileName)
 
-
+    if (Analysis%AnalysisSettings%Restart) then
+        write(*,*) 'Problem will be restarted'
+        write(*,*) ''
+    endif
+    
 	if (TaskSolve) then
         !**********************************************************************************************
         ! SOLVING A FINITE ELEMENT ANALYSIS
