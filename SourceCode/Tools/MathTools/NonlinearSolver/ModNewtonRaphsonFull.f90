@@ -50,8 +50,8 @@ contains
         real(8),dimension(:)          :: Xguess , X
 
         integer :: it, i
-        real(8) :: normR , normR0, eta
         real(8),allocatable,dimension(:) :: R , DX, DXFull
+        real(8) :: normR , normR0
 
         real(8),dimension(:,:),pointer :: GFull
         class(ClassGlobalSparseMatrix),pointer :: GSparse
@@ -61,6 +61,7 @@ contains
         call this%Status%SetSuccess
 
         it = 0
+        SOE%it = it
         X=Xguess
 
         if (SOE%isPeriodic) then
@@ -70,8 +71,7 @@ contains
         endif
 
         LOOP: do while (.true.)
-            
-            SOE%it = it
+         
 
             !---------------------------------------------------------------------------------------------------------------
             ! Evaluating Residual - Nonlinear System of Equations
@@ -133,7 +133,7 @@ contains
             ! Update Iterations
             !---------------------------------------------------------------------------------------------------------------
             it=it+1
-
+            SOE%it = it
             this%NumberOfIterations = it
             !---------------------------------------------------------------------------------------------------------------
 
@@ -148,28 +148,20 @@ contains
                 case default
                 end select
 
-            if (it>20) then
-                eta = (sqrt(5.0D0)-1)/2
-                if (it==21) then
-                    write(*,*)
-                    write(*,'(12x,a)') 'More than 21 attempts. Possible stationary point. Attempting to regularize...'
-                    write(*,*)
-                endif
-            else
-                eta = 1.0D0
-            endif
-                
             !---------------------------------------------------------------------------------------------------------------
             ! Update Unknown Variable and Additional Variables
             !---------------------------------------------------------------------------------------------------------------
-            if (SOE%isPeriodic) then
-                call SOE%ExpandResult(DX,DXFull,it)
-                X = X + eta*DXFull
-            else
-                X = X + eta*DX
-            endif
+                            
+            call LineSearch(SOE, R, GSparse, DX, X, it)
+                
+            !if (SOE%isPeriodic) then
+            !    call SOE%ExpandResult(DX,DXFull,it)
+            !    X = X + DXFull
+            !else
+            !    X = X + DX
+            !endif
+            !call SOE%PostUpdate(X)
 
-            call SOE%PostUpdate(X)
             !---------------------------------------------------------------------------------------------------------------
 
         end do LOOP
@@ -207,18 +199,97 @@ contains
             this%tol = ListOfValues(1)
             this%itmax = ListOfValues(2)
 
-        end subroutine
-        !==========================================================================================
-!        subroutine NewtonRaphsonFull_Constructor (this)
-!		    !************************************************************************************
-!            ! DECLARATIONS OF VARIABLES
-!		    !************************************************************************************
-!            ! Object
-!            ! ---------------------------------------------------------------------------------
-!            class(ClassNewtonRaphsonFull) :: this
-!		    !************************************************************************************
-!
-!        endsubroutine
+    end subroutine
 
+    
+    
+        subroutine LineSearch(SOE, R, GSparse, DX, X, it)
+            !************************************************************************************           
+            ! DECLARATIONS OF VARIABLES
+		    !************************************************************************************
+            ! Object
+            ! ---------------------------------------------------------------------------------
+            class(ClassNonLinearSystemOfEquations)      :: SOE
+            ! Input variables
+            ! ---------------------------------------------------------------------------------
+            real(8),dimension(:)                        :: R , DX
+            class(ClassGlobalSparseMatrix),pointer      :: GSparse
+            integer                                     :: it
+
+            ! Output variables
+            real(8),dimension(:)                        :: X 
+            
+            !For Line Search
+            real(8) :: R_scalar_0, R_scalar_eta, eta, eta_old, rho_LS, criteria_LS, alpha
+            real(8) :: R_new_LS(size(DX)), X_new_LS(size(X)), DXFull(size(X))
+            integer :: count_LS
+            logical :: Divergence_LS
+           
+            !---------------------------------------------------------------------------------------------------------------
+            ! Line-search / Bonet and Wood's Text Book  (2008)            
+            R_scalar_0 = - dot_product(DX, R)
+                
+            eta = 1.0
+            eta_old = eta
+            rho_LS = 0.5
+            Divergence_LS = .true.
+            count_LS = 0
+          
+            if (SOE%isPeriodic) call SOE%ExpandResult(DX,DXFull,it)
+            
+            LS: do while (Divergence_LS)
+                    
+                count_LS = count_LS + 1
+                write(*,'(12x,a,i3, a,e16.9)') 'Line Search Iteration: ',count_LS ,'  Step length : ',eta
+                
+                if (SOE%isPeriodic) then
+                    X_new_LS = X + eta*DXFull
+                else
+                    X_new_LS = X + eta*DX
+                endif
+                                
+                call SOE%PostUpdate(X_new_LS)
+                call SOE%EvaluateSystem(X_new_LS,R_new_LS)
+                call SOE%EvaluateGradient(X_new_LS,R_new_LS,GSparse)
+                               
+                R_scalar_eta = dot_product(DX, R_new_LS)
+                    
+                criteria_LS = abs(R_scalar_eta)/abs(R_scalar_0)
+                    
+                if (criteria_LS.lt.rho_LS) then
+                    Divergence_LS = .false.
+                    X = X_new_LS
+                endif
+                
+                alpha = R_scalar_0/R_scalar_eta
+                    
+                if (alpha.lt.0.0) then
+                    eta = (alpha/2) + sqrt((alpha/2)**2 - alpha)
+                else
+                    eta = alpha/2
+                endif
+                    
+                if (eta.gt.1.0) then
+                    eta = 0.99
+                elseif(eta.lt.1.0e-3) then
+                    eta = 1.0e-2                        
+                end if
+                    
+                if ( (eta_old-eta).lt.1e-12) then
+                    Divergence_LS = .false.
+                    X = X_new_LS        
+                end if
+                
+                eta_old = eta
+                    
+            enddo LS
+            
+        endsubroutine
+        !==========================================================================================  
+    
+    
+    
+    
+    
     end module
 

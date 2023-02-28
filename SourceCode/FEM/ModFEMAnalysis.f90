@@ -1476,11 +1476,20 @@ module FEMAnalysis
             if (.not.AnalysisSettings%Restart) then
                 init_LC = 1
             elseif (nLoadCases .gt. last_LC) then
-                init_LC = last_LC+1
+                nSteps = BC%GetNumberOfSteps(last_LC)
+                if (nSteps .gt. last_ST) then
+                    init_LC = last_LC
+                elseif (nSteps .eq. last_ST) then
+                    init_LC = last_LC+1
+                    last_ST = 0
+                else
+                    write(*,*) '** Error restarting load case. **'
+                    STOP
+                endif
             elseif (nLoadCases .eq. last_LC) then
                 init_LC = last_LC
             else
-                write(*,*) '** Last load case already calculated! **'
+                write(*,*) '** Error restarting load case. **'
                 STOP
             endif
 
@@ -1496,8 +1505,10 @@ module FEMAnalysis
                     init_ST = 1
                 elseif (nSteps .gt. last_ST) then
                     init_ST = last_ST+1
+                    AnalysisSettings%Restart = .false.
                 elseif (nSteps .eq. last_ST) then
                     write(*,*) '** Last load step already calculated! Cycling to next load case...**'
+                    AnalysisSettings%Restart = .false.
                     cycle LOAD_CASE
                 else
                     write(*,*) '** Error restarting load step. **'

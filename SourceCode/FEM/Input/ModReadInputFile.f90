@@ -294,7 +294,7 @@ contains
                     write(*,*) ''
                     STOP
                 endif
-        elseif ((DataFile%CompareStrings(ListOfValues(9),"False")) .AND. (AnalysisSettings%MultiscaleModel .eq. MultiscaleModels%Periodic)) then
+        elseif (DataFile%CompareStrings(ListOfValues(9),"False")) then
             AnalysisSettings%Restart=.false.
         else
             write(*,*) ''
