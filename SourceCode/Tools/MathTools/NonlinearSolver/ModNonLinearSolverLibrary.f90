@@ -20,6 +20,7 @@ module NonlinearSolverLibrary
 	! --------------------------------------------------------------------------------------------
     use NonlinearSolver
     use modNewtonRaphsonFull
+    use modNewtonRaphsonLineSearch
 
     ! Nonlinear Solver Enumerator
 	! ------------------------------------------------------------------------------------------
@@ -59,6 +60,7 @@ module NonlinearSolverLibrary
             ! Internal variables
             ! -----------------------------------------------------------------------------------
 			type(ClassNewtonRaphsonFull)  , pointer :: NRFull => null()
+            type(ClassNewtonRaphsonLineSearch)  , pointer :: NRLS => null()
 
 		    !************************************************************************************
 
@@ -72,6 +74,11 @@ module NonlinearSolverLibrary
 
                     allocate(NRFull)
                     Solver => NRFull
+                    
+                case (NonLinearSolvers %NewtonRaphsonLineSearch)
+
+                    allocate(NRLS)
+                    Solver => NRLS
 
             case default
                 call Error("AllocateNewNonlinearSolver : Nonlinear Solver not identified")
@@ -118,7 +125,8 @@ module NonlinearSolverLibrary
 		    !************************************************************************************
 		    if (Comp%CompareStrings(solver,"newton_raphson_full")) then
                 solverID = NonLinearSolvers % NewtonRaphsonFull
-
+            elseif(Comp%CompareStrings(solver,"newton_raphson_linesearch")) then
+                solverID = NonLinearSolvers % NewtonRaphsonLineSearch
             else
                 call Error("Error: Nonlinear Solver not identified")
             endif

@@ -30,17 +30,19 @@ module modNonLinearSystemOfEquations
         stop "EvaluateSystem Not Implemented"
     end subroutine
 !__________________________________________________________________________________________________
-    subroutine EvaluateGradientBase(this,x,R,G)
+    subroutine EvaluateGradientBase(this,x,R,G,flagG)
         class(ClassNonLinearSystemOfEquations)::this
         real(8),dimension(:)::x,R
         real(8),dimension(:,:),pointer::G
+        logical :: flagG
         stop "EvaluateGradient Not Implemented"
     end subroutine
 !__________________________________________________________________________________________________
-    subroutine EvaluateGradientSparseBase(this,x,R,G)
+    subroutine EvaluateGradientSparseBase(this,x,R,G,flagG)
         class(ClassNonLinearSystemOfEquations)::this
         class(ClassGlobalSparseMatrix) , pointer :: G
         real(8),dimension(:)::x,R
+        logical :: flagG
         stop "EvaluateGradient Not Implemented"
     end subroutine
 !__________________________________________________________________________________________________

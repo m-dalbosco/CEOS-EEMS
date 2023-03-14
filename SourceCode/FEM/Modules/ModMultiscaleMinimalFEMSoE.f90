@@ -97,7 +97,7 @@ module ModMultiscaleMinimalFEMSoE
     !=================================================================================================
 
     !=================================================================================================
-    subroutine EvaluateKt(this,X,R,G)
+    subroutine EvaluateKt(this,X,R,G,flagG)
 
         use Interfaces
         use MathRoutines
@@ -106,6 +106,7 @@ module ModMultiscaleMinimalFEMSoE
         real(8),dimension(:) :: X , R
         real(8) :: norma
         integer :: nDOF
+        logical :: flagG
 
         !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
         real(8) :: Matrix( (24+12),(24+12) )

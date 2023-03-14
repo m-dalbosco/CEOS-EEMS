@@ -66,7 +66,7 @@ module modFEMSystemOfEquations
 
 !--------------------------------------------------------------------------------------------------
 
-    subroutine EvaluateKt(this,X,R,G)
+    subroutine EvaluateKt(this,X,R,G,flagG)
 
         use Interfaces
         use MathRoutines
@@ -75,6 +75,7 @@ module modFEMSystemOfEquations
         real(8),dimension(:) :: X , R
         real(8) :: norma
         integer :: nDOF
+        logical :: flagG
 
         call this%AnalysisSettings%GetTotalNumberOfDOF (this%GlobalNodesList, nDOF)
 

@@ -74,7 +74,7 @@ module ModMultiscalePeriodicFEMSoE
 
 !--------------------------------------------------------------------------------------------------
 
-    subroutine EvaluateKt(this,X,R,G)
+    subroutine EvaluateKt(this,X,R,G,flagG)
 
         use Interfaces
         use MathRoutines
@@ -86,6 +86,7 @@ module ModMultiscalePeriodicFEMSoE
         real(8),allocatable,dimension(:)           :: RFull       !Full system
         integer :: nDOF, nDOFRed, info, nzmax, ValDum, ColDum, LengthKgAuxVal, LengthKgRedVal, i, j, nVals
         integer,allocatable,dimension(:)           :: Cols
+        logical :: flagG
         
         !Clean KgRed (in case number of elements changes)
         if (associated(this%KgRed%RowMap)) then
@@ -103,7 +104,7 @@ module ModMultiscalePeriodicFEMSoE
         nDOFRed = this%nDOF !DOF reduced system
         allocate(RFull(nDOF))
         
-        call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
+        if (flagG) call TangentStiffnessMatrix(this%AnalysisSettings , this%ElementList , nDOF, this%Kg) !Calculate full stiffness matrix
 
         this%BC%it = this%it
         ! As CC de deslocamento prescrito estão sendo aplicadas no sistema Kx=R e não em Kx=-R!!!
@@ -113,7 +114,10 @@ module ModMultiscalePeriodicFEMSoE
         RFull = -RFull
         !Print for checking at first iteration
         if ((this%it==0) .AND. (this%PrintMats)) call OutputSparseMatrix(this%Kg,'Kg.txt',nDOF,nDOF)
-                
+
+        
+        if (flagG) then
+            
         allocate(KgAux%RowMap(nDOFRed+1))
                
         nzmax = nDOF*nDOFRed
@@ -168,6 +172,8 @@ module ModMultiscalePeriodicFEMSoE
         call SparseMatrixKill(KgRedSparse)
         
         G => this%KgRed
+        
+        endif
         
         R = 0.0d0
         ! Calculate R (red) from RFull
