@@ -186,7 +186,7 @@ module PardisoSolver
             iparm(2) = 3
 
             ! INPUT - Preconditioned CGS/CG. The default isiparm(4)=0.
-            iparm(4) = 0
+            iparm(4) = 62
 
             ! INPUT - iparm(5) = 0: User permutation in theperm array is ignored
             iparm(5) = 0

@@ -42,7 +42,7 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
     real(8) , pointer , dimension(:,:) :: NaturalCoord
     real(8) , pointer , dimension(:)   :: Weight
     real(8)                            :: ExtraNaturalCoord(3)
-    logical                            :: ElementError_exists
+    logical                            :: ElementError_exists, Failure
 
     !************************************************************************************
 
@@ -50,6 +50,7 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
     ! SOLVING THE GLOBAL CONSTITUTIVE MODEL
     !************************************************************************************
 
+    Failure = .false.
 
     ! Loop over the elements
     do e = 1 , size(ElementList)
@@ -64,6 +65,8 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
         call ElementList(e)%El%ElementVolume(AnalysisSettings,Volume,VolumeX, Status)
 
         if (Status%Error) then
+            
+            Failure = .true.
 
             inquire(file='ErrorElement.txt',exist=ElementError_exists) !Check if file with failed elements already exists
             
@@ -73,13 +76,10 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
                 open(37,file='ErrorElement.txt',status='new')
             endif
                         
-            write(37,'(a)') Trim(Status%ErrorDescription)
             write(37,'(a,i6,a,f7.4)') 'Failed in element ',e,' at time ',Time
-            
-            write (37,*) ''   
-            
             close(37)
-            return
+            call Status%Reset
+            !return
             
         endif
 
@@ -134,6 +134,8 @@ subroutine SolveConstitutiveModel( ElementList , AnalysisSettings, Time, U, Stat
         endif
 
     enddo
+    
+    if (Failure) call Status%SetError(-1, 'Subroutine ElementVolume in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
 
 end subroutine
 

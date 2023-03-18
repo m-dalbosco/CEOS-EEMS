@@ -1568,7 +1568,7 @@ module FEMAnalysis
                             write(*,'(12x,a)') 'Not Converged - '//Trim(NLSolver%Status%ErrorDescription)
                             write(*,'(12x,a)') Trim(FEMSoE%Status%ErrorDescription)
                             write(*,*)''
-
+                                
                             alpha = alpha_min + (1.0d0-1.0d0/GR)*( alpha - alpha_min )
 
                             U = Uconverged
@@ -1587,6 +1587,12 @@ module FEMAnalysis
                             
                             write(*,'(8x,a,i3)') 'Cut Back: ',CutBack
                             write(*,'(12x,a,i3,a,f7.4,a)') 'SubStep: ',SubStep,' (Alpha: ',alpha,')'
+                            
+                            open(37,file='ErrorElement.txt',status='old',access='append')
+                            write (37,*) ''   
+                            write(37,'(8x,a,i3)') 'CUTBACK ',CutBack
+                            write (37,*) ''   
+                            close(37)
 
                             !---------------------------------------------------------------------------
                         ELSEIF (alpha==1.0d0) then
@@ -2859,6 +2865,7 @@ module FEMAnalysis
         real(8) :: Time
         character(len=255) :: OptionName, OptionValue, String, FileName
         integer :: Flag_EndStep, NumberOfIterations
+        real(8) :: Ustep(size(U))
 
         !************************************************************************************
 
@@ -2906,11 +2913,13 @@ module FEMAnalysis
             NumberOfIterations = OptionValue
             
             do i = 1, TotalNDOF
-                    call ResultFile%GetNextString(String)
-                    U(i) = String
+                call ResultFile%GetNextString(String)
+                Ustep(i) = String
             enddo
 
             if (Flag_EndStep .eq. 1) then !Restart only full steps
+                
+                U = Ustep
                 
                 last_LC = LoadCase
                 last_ST = Step

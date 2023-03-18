@@ -38,7 +38,7 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
     integer :: e , nDOFel, i, j, nNodes
     integer , pointer , dimension(:) :: GM
     real(8) , pointer , dimension(:) :: Fe
-    logical :: ElementError_exists
+    logical :: ElementError_exists, Failure
 
     !************************************************************************************
 
@@ -47,6 +47,8 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
     !************************************************************************************
 
     Fint=0.0d0
+    
+    Failure = .false.
 
      do  e = 1, size( ElementList )
 
@@ -61,6 +63,8 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
 
         if (Status%Error) then
 
+            Failure = .true.
+            
             inquire(file='ErrorElement.txt',exist=ElementError_exists) !Check if file with failed elements already exists
             
             if (ElementError_exists) then
@@ -68,20 +72,19 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
             else
                 open(37,file='ErrorElement.txt',status='new')
             endif
-                        
-            write(37,'(a)') Trim(Status%ErrorDescription)
+
             write(37,'(a,i6)') 'Failed in element ',e
-            
-            write (37,*) ''   
-            
             close(37)
-            return
+            call Status%Reset
+            !return
             
         endif
 
         Fint(GM) = Fint(GM) + Fe
 
-    enddo
+     enddo
+     
+     if (Failure) call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
 
     !************************************************************************************
 
