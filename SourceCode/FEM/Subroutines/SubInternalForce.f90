@@ -84,7 +84,13 @@ subroutine InternalForce( ElementList, AnalysisSettings, Fint, Status )
 
      enddo
      
-     if (Failure) call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
+     if (Failure) then
+        call Status%SetError(-1, 'Subroutine ElementInternalForce in ModElement.f90. Error: Determinant of the Jacobian Matrix <= 0.0d0')
+        open(37,file='ErrorElement.txt',status='old',access='append')
+        write(37,*) ''
+        write(37,*) ''
+        close(37)
+     endif
 
     !************************************************************************************
 

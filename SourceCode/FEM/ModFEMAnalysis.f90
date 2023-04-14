@@ -1587,15 +1587,9 @@ module FEMAnalysis
                             
                             write(*,'(8x,a,i3)') 'Cut Back: ',CutBack
                             write(*,'(12x,a,i3,a,f7.4,a)') 'SubStep: ',SubStep,' (Alpha: ',alpha,')'
-                            
-                            open(37,file='ErrorElement.txt',status='old',access='append')
-                            write (37,*) ''   
-                            write(37,'(8x,a,i3)') 'CUTBACK ',CutBack
-                            write (37,*) ''   
-                            close(37)
 
                             !---------------------------------------------------------------------------
-                        ELSEIF (alpha==1.0d0) then
+                        ELSEIF (abs(alpha-1.0d0) .lt. 1.0d-6) then
 
                             SubStep = SubStep + 1
 
